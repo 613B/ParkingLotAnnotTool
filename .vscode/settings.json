@@ -1,0 +1,22 @@
+{
+  "[python]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4  
+  },
+  "python.linting.enabled": true,
+  "python.linting.ruffEnabled": true,
+  "python.linting.ruffArgs": [
+      "--select=E,F,W,C90",
+      "--ignore=E501,W503",
+      "--max-line-length=88",
+      "--exclude=venv"
+  ],
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+      "source.fixAll": true
+  },
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": [
+      "--line-length=88"
+  ]
+}

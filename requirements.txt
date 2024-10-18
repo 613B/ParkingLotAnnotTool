@@ -1,0 +1,2 @@
+labelme == 5.5.0
+ruff

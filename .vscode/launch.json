@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ParkingLotAnnotTool",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/ParkingLotAnnotTool",
+      "console": "integratedTerminal",
+      "args": [
+        "--app_mode", "general",
+        "--disable_report_crash"
+      ]
+    }
+  ]
+}

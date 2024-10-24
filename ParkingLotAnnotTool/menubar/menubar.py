@@ -1,15 +1,18 @@
-from PyQt5.QtWidgets import QMenuBar, QAction, QMainWindow
+from PyQt5.QtWidgets import QAction, QMenuBar
 
-def create_menubar(mw: QMainWindow) -> None:
-    menubar = QMenuBar(mw)
-    edit_menu = menubar.addMenu('Edit')
-    edit_action = QAction('Edit Action', mw)
-    edit_menu.addAction(edit_action)
-    ctrl_menu = menubar.addMenu('Ctrl')
-    ctrl_action = QAction('Ctrl Action', mw)
-    ctrl_menu.addAction(ctrl_action)
-    help_menu = menubar.addMenu('Help')
-    help_action = QAction('Help Action', mw)
-    help_menu.addAction(help_action)
-
-    mw.setMenuBar(menubar)
+class MenuBar(QMenuBar):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        
+        # ファイルメニューを作成
+        file_menu = self.addMenu("File")
+        
+        # アクションを作成
+        new_action = QAction("New", self)
+        open_action = QAction("Open", self)
+        save_action = QAction("Save", self)
+        
+        # アクションをメニューに追加
+        file_menu.addAction(new_action)
+        file_menu.addAction(open_action)
+        file_menu.addAction(save_action)

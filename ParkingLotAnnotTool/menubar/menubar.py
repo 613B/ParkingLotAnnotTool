@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QAction, QMenuBar
+from PyQt6.QtWidgets import QMenuBar
+from PyQt6.QtGui import QAction
 
 class MenuBar(QMenuBar):
     def __init__(self, parent=None):

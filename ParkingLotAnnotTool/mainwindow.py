@@ -1,6 +1,5 @@
-from PyQt5.QtWidgets import QMainWindow
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
+from PyQt6.QtWidgets import QMainWindow
+from PyQt6.QtCore import Qt
 
 from canvas.canvas import CanvasWidget
 from messagebox.messagebox import MessageBox

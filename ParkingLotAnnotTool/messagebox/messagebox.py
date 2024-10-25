@@ -1,5 +1,5 @@
 # logger.py
-from PyQt5.QtWidgets import QDockWidget, QTextEdit
+from PyQt6.QtWidgets import QDockWidget, QTextEdit
 
 class MessageBox(QDockWidget):
     def __init__(self, name, parent=None):

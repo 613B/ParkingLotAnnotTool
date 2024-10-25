@@ -13,10 +13,14 @@
   ],
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-      "source.fixAll": true
+    "source.fixAll": "explicit"
   },
   "python.formatting.provider": "black",
   "python.formatting.blackArgs": [
       "--line-length=88"
-  ]
+  ],
+  "ruff.lint.args": [
+    "--unfixable=F401",
+    "--ignore=F403",
+    "--ignore=F405"],
 }

@@ -10,7 +10,10 @@
       "args": [
         "--app_mode", "general",
         "--disable_report_crash"
-      ]
+      ],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
     }
   ]
 }

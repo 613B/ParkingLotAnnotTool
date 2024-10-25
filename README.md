@@ -10,7 +10,7 @@
 ## Get started
 
 ```bash
-py -3.9 -m venv .venv
+py -3.11 -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
 ```

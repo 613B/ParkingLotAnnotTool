@@ -1,2 +1,5 @@
-labelme == 5.5.0
+pyqt6
+numpy
+opencv-python
+loguru
 ruff

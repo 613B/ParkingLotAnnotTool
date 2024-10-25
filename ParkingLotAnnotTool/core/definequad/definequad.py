@@ -447,9 +447,9 @@ class Canvas:
 
 class DisableChangedSignal:
 
-    def __init__(self, l):
-        self.l = l
-        self.enable = l.connect_changed_flag
+    def __init__(self, custom_list):
+        self.l = custom_list
+        self.enable = custom_list.connect_changed_flag
 
     def __enter__(self):
         if self.enable:

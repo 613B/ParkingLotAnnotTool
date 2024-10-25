@@ -4,6 +4,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 import numpy as np
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
+from ParkingLotAnnotTool.utils.math import *
 
 
 class CanvasPicture(QWidget):
@@ -256,25 +257,18 @@ class CanvasScroll(QScrollArea):
         h_bar.setValue(int(new_h_bar_value))
         v_bar.setValue(int(new_v_bar_value))
 
-    def __clip(
-        self,
-        value: int | float,
-        lower: int | float,
-        upper: int | float):
-        return max(lower, min(value, upper))
-
     def set_zoom(self, zoom: int) -> None:
         if self._canvas_picture.pixmap is None:
             return
         self._zoom = int(zoom)
-        self._zoom = self.__clip(self._zoom, 1, 500)
+        self._zoom = clip(self._zoom, 1, 500)
         self._canvas_picture.set_zoom(self._zoom)
 
     def add_zoom(self, increment: int = 10):
         if self._canvas_picture.pixmap is None:
             return
         self._zoom = int(self._zoom + increment)
-        self._zoom = self.__clip(self._zoom, 1, 500)
+        self._zoom = clip(self._zoom, 1, 500)
         self._canvas_picture.set_zoom(self._zoom)
 
     def fit_window(self):
@@ -282,7 +276,7 @@ class CanvasScroll(QScrollArea):
             return
         value = self.__scale_to_fit_window()
         self._zoom = int(100 * value)
-        self._zoom = self.__clip(self._zoom, 1, 500)
+        self._zoom = clip(self._zoom, 1, 500)
         self._canvas_picture.set_zoom(self._zoom)
 
     def __scale_to_fit_window(self) -> int:

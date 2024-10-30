@@ -1,3 +1,4 @@
+import json
 from typing import Optional
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QMessageBox as QMB
@@ -10,6 +11,8 @@ class LotsData:
         self.lots: Optional[list] = []
         self.dirty: bool = False
         self._loaded: bool = False
+        self.json_path = None
+        self.image_path = None
 
     def reset(self):
         self.may_save()
@@ -18,7 +21,10 @@ class LotsData:
 
     def load(self) -> bool:
         self.may_save()
-        # self.lots = None
+        with open(self.json_path, 'r', encoding='utf-8') as file:
+            data = json.load(file)
+        self.image_path = data['image_path']
+        self.lots = data['lots']
         self.dirty = False
         self._loaded = True
         return True
@@ -26,8 +32,16 @@ class LotsData:
     def loaded(self) -> bool:
         return self._loaded
 
+    def is_dirty(self) -> bool:
+        return self.dirty
+
     def save(self):
-        pass
+        data = {
+            "version": "0.1",
+            "image_path": self.image_path,
+            "lots": self.lots}
+        with open(self.json_path, 'w', encoding='utf-8') as file:
+            json.dump(data, file, ensure_ascii=False, indent=4)
 
     def may_save(self):
         if not self.dirty:
@@ -38,6 +52,12 @@ class LotsData:
             self.save()
         if ret == QMB.StandardButton.No:
             pass
+    
+    def get_image_path(self):
+        return self.image_path
+    
+    def set_image_path(self, path):
+        self.image_path = path
 
     def get_lots(self):
         return self.lots

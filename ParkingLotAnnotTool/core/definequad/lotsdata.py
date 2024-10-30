@@ -42,6 +42,8 @@ class LotsData:
             "lots": self.lots}
         with open(self.json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
+        self._loaded = True
+        self.dirty = False
 
     def may_save(self):
         if not self.dirty:

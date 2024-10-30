@@ -46,7 +46,7 @@ class DefineQuadWidget(QWidget):
         self.canvas_scroll = CanvasScroll(self, self.canvas_picture)
 
         self.open_action = new_action(self, 'Open', icon=read_icon('open_file.png'), slot=self.click_open)
-        self.get_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_get)
+        self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
         self.draw_action = new_action(self, 'Draw', icon=read_icon('draw.png'), slot=self.click_draw, checkable=True)
         self.none_action = new_action(self, 'None', icon=read_icon('arrow.png'), slot=self.click_none, checkable=True)
         self.capture_action = new_action(self, 'Split', icon=read_icon('film.png'), slot=self.click_capture)
@@ -57,7 +57,7 @@ class DefineQuadWidget(QWidget):
         self.toolbar.setOrientation(Qt.Orientation.Vertical)
         self.toolbar.addAction(self.open_action)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.get_action)
+        self.toolbar.addAction(self.save_action)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.none_action)
         self.toolbar.addAction(self.draw_action)
@@ -79,7 +79,7 @@ class DefineQuadWidget(QWidget):
     def enable_add_preset(self) -> None:
         self.editable = False
         self.set_action.setEnabled(False)
-        self.get_action.setEnabled(False)
+        self.save_action.setEnabled(False)
         self.none_action.setEnabled(False)
         self.draw_action.setEnabled(False)
         self.capture_action.setEnabled(False)
@@ -89,7 +89,7 @@ class DefineQuadWidget(QWidget):
     def disable_add_preset(self) -> None:
         self.editable = True
         self.set_action.setEnabled(True)
-        self.get_action.setEnabled(True)
+        self.save_action.setEnabled(True)
         self.none_action.setEnabled(True)
         self.draw_action.setEnabled(True)
         self.capture_action.setEnabled(True)
@@ -104,21 +104,34 @@ class DefineQuadWidget(QWidget):
     def click_open(self) -> None:
         traceback_and_exit(self.click_open_impl)
     def click_open_impl(self) -> None:
-        file_filter = "images (*.png *.PNG *.jpg *.jpeg *.JPG *.JPEG);;json (*.json *.JSON)"
+        file_filter_img = "images (*.png *.PNG *.jpg *.jpeg *.JPG *.JPEG)"
+        file_filter_json = "json (*.json *.JSON)"
+        file_filter = f'{file_filter_img};;{file_filter_json}'
         file_path = QFileDialog.getOpenFileName(self, "Open File", "", file_filter)
         print(file_path)
         if file_path == ('', ''):
             return
-        self.file_path = file_path
-        img = cv2.imread(file_path[0], cv2.IMREAD_COLOR)
+        if   file_path[1] == file_filter_img:
+            image_path = file_path[0]
+            self.lots_data.set_image_path(image_path)
+        elif file_path[1] == file_filter_json:
+            self.lots_data.json_path = file_path[0]
+            self.lots_data.load()
+            image_path = self.lots_data.get_image_path()
+        img = cv2.imread(image_path, cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.canvas_scroll.fit_window()
 
-    def click_get(self) -> None:
-        traceback_and_exit(self.click_get_impl)
-    def click_get_impl(self) -> None:
-        self.lot_list.refresh()
-        self.canvas_picture.update()
+    def click_save(self) -> None:
+        traceback_and_exit(self.click_save_impl)
+    def click_save_impl(self) -> None:
+        if self.lots_data.json_path is None:
+            file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Json File (*.json)")
+            self.lots_data.json_path = file_path
+        if self.lots_data.is_dirty() and self.lots_data.loaded():
+            self.lots_data.may_save()
+        else:
+            self.lots_data.save()
 
     def click_none(self) -> None:
         traceback_and_exit(self.click_none_impl)
@@ -166,7 +179,6 @@ class DefineQuadWidget(QWidget):
         raise RuntimeError('no tool is checked')
 
     def refresh(self) -> None:
-        self.lots_data.load()
         self.lot_list.refresh()
 
 
@@ -267,9 +279,6 @@ class Canvas:
         traceback_and_exit(self.mouse_move_event_impl, event=event, pos=pos, scale=scale)
     def mouse_move_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
         lots_data = self.p.lots_data
-        if not lots_data.loaded():
-            if not lots_data.load():
-                return
         if self.p.editable is False:
             return
         canvastool = self.p.get_canvastool()
@@ -317,10 +326,6 @@ class Canvas:
     def mouse_press_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
         traceback_and_exit(self.mouse_press_event_impl, event=event, pos=pos, scale=scale)
     def mouse_press_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
-        lots_data = self.p.lots_data
-        if not lots_data.loaded():
-            if not lots_data.load():
-                return
         if self.p.editable is False:
             return
 
@@ -342,10 +347,6 @@ class Canvas:
     def mouse_release_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
         traceback_and_exit(self.mouse_release_event_impl, event=event, pos=pos, scale=scale)
     def mouse_release_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
-        lots_data = self.p.lots_data
-        if not lots_data.loaded():
-            if not lots_data.load():
-                return
         if self.p.editable is False:
             return
         canvastool = self.p.get_canvastool()
@@ -371,9 +372,6 @@ class Canvas:
         traceback_and_exit(self.paint_event_impl, event=event, painter=painter, scale=scale)
     def paint_event_impl(self, event: QPaintEvent, painter: QPainter, scale: float) -> None:
         lots_data = self.p.lots_data
-        if not lots_data.loaded():
-            if not lots_data.load():
-                return
         if not self.p.editable:
             return
         canvastool = self.p.get_canvastool()

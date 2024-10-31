@@ -1,17 +1,21 @@
 import cv2
+import json
+from pathlib import Path
 
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QDialogButtonBox as QDBB
 
-from ParkingLotAnnotTool.utils.trace import traceback_and_exit
+from ParkingLotAnnotTool.utils.geometry import is_polygon_convex
+from ParkingLotAnnotTool.core.definequad.imgcrop import ImageCropWorker
 from ParkingLotAnnotTool.utils.resource import read_icon
 from ParkingLotAnnotTool.utils.signal import *
-from ParkingLotAnnotTool.utils.geometry import is_polygon_convex
+from ParkingLotAnnotTool.utils.trace import traceback_and_exit
 from .canvas import CanvasPicture, CanvasScroll
 from .action import new_action
 from .lotsdata import LotsData
+from .videoextract import VideoExtractWorker
 
 CANVASTOOL_NONE = 0
 CANVASTOOL_DRAW = 1
@@ -49,7 +53,7 @@ class DefineQuadWidget(QWidget):
         self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
         self.draw_action = new_action(self, 'Draw', icon=read_icon('draw.png'), slot=self.click_draw, checkable=True)
         self.none_action = new_action(self, 'None', icon=read_icon('arrow.png'), slot=self.click_none, checkable=True)
-        self.capture_action = new_action(self, 'Split', icon=read_icon('film.png'), slot=self.click_capture)
+        self.extract_frames_action = new_action(self, 'Extract frames', icon=read_icon('film.png'), slot=self.click_extract_frames)
         self.view_zoom_fit_action = new_action(self, 'Zoom Fit', icon=read_icon('zoom_fit.png'), slot=self.press_view_zoom_fit)
         self.view_zoom_1_action = new_action(self, 'Zoom 100%', icon=read_icon('zoom_1.png'), slot=self.press_view_zoom_1)
 
@@ -62,7 +66,7 @@ class DefineQuadWidget(QWidget):
         self.toolbar.addAction(self.none_action)
         self.toolbar.addAction(self.draw_action)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.capture_action)
+        self.toolbar.addAction(self.extract_frames_action)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.view_zoom_fit_action)
         self.toolbar.addAction(self.view_zoom_1_action)
@@ -82,7 +86,7 @@ class DefineQuadWidget(QWidget):
         self.save_action.setEnabled(False)
         self.none_action.setEnabled(False)
         self.draw_action.setEnabled(False)
-        self.capture_action.setEnabled(False)
+        self.extract_frames_action.setEnabled(False)
         self.view_zoom_fit_action.setEnabled(False)
         self.view_zoom_1_action.setEnabled(False)
 
@@ -92,7 +96,7 @@ class DefineQuadWidget(QWidget):
         self.save_action.setEnabled(True)
         self.none_action.setEnabled(True)
         self.draw_action.setEnabled(True)
-        self.capture_action.setEnabled(True)
+        self.extract_frames_action.setEnabled(True)
         self.view_zoom_fit_action.setEnabled(True)
         self.view_zoom_1_action.setEnabled(True)
 
@@ -143,10 +147,68 @@ class DefineQuadWidget(QWidget):
     def click_draw_impl(self) -> None:
         self.check_canvastool(CANVASTOOL_DRAW)
 
-    def click_capture(self) -> None:
-        traceback_and_exit(self.click_capture_impl)
-    def click_capture_impl(self) -> None:
-        pass
+    def video_extraction_start(self, video_path, outdir_path, interval):
+        self.progress_dialog = QProgressDialog("Extracting frames...", "Cancel", 0, 100, self)
+        self.videoextract_worker = VideoExtractWorker(video_path, outdir_path, interval)
+
+        self.progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        self.progress_dialog.canceled.connect(self.videoextract_worker.cancel)
+        self.progress_dialog.show()
+        self.videoextract_worker.progress.connect(self.progress_dialog.setValue)
+        self.videoextract_worker.finished.connect(self.image_cropping_start)
+        self.videoextract_worker.canceled.connect(self.progress_dialog.close)
+        self.videoextract_worker.start()
+
+    def image_cropping_start(self):
+        self.imagecrop_worker = ImageCropWorker(self.scene_json_path)
+
+        self.progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+        self.progress_dialog.canceled.connect(self.imagecrop_worker.cancel)
+        self.progress_dialog.setLabelText("Cropping images...")
+        self.progress_dialog.show()
+        self.imagecrop_worker.progress.connect(self.progress_dialog.setValue)
+        self.imagecrop_worker.finished.connect(self.progress_dialog.close)
+        self.imagecrop_worker.canceled.connect(self.progress_dialog.close)
+        self.imagecrop_worker.start()
+
+    def click_extract_frames(self) -> None:
+        traceback_and_exit(self.click_extract_frames_impl)
+    def click_extract_frames_impl(self) -> None:
+        self.lots_data.may_save()
+        if not self.lots_data.loaded():
+            QMessageBox.information(
+                self, "Info",
+                "Image is not loaded. Or it has never been saved.")
+            return
+        lots = self.lots_data.get_lots()
+        if lots == []:
+            QMessageBox.information(
+                self, "Info",
+                "Lots are not set. Set them with 'Draw' mode.")
+            return
+        path = QFileDialog.getOpenFileName(self, "Open Video File", "", "video (*.mp4)")
+        if path == ('', ''):
+            return
+        video_path = Path(path[0])
+        path = QFileDialog.getExistingDirectory(self, "Output Directory", "")
+        if path == '':
+            return
+        outdir_path = Path(path)
+        interval, ok = QInputDialog.getInt(self, "Extract Interval", "Enter the interval[sec]:", 60, 0, 100, 1)
+        if not ok:
+            return
+
+        data = {
+            "version": "0.1",
+            "video_path": str(video_path),
+            "lots": self.lots_data.get_lots()
+        }
+        self.scene_json_path = outdir_path / "scene.json"
+        with open(self.scene_json_path, 'w', encoding='utf-8') as file:
+            json.dump(data, file, ensure_ascii=False, indent=4)
+        
+        raw_dir_path = outdir_path / "raw"
+        self.video_extraction_start(video_path, raw_dir_path, interval)
 
     def press_view_zoom_fit(self) -> None:
         traceback_and_exit(self.press_view_zoom_fit_impl)

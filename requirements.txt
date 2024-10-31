@@ -1,5 +1,6 @@
 pyqt6
 numpy
 opencv-python
+pillow
 loguru
 ruff

@@ -8,13 +8,13 @@ from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QDialogButtonBox as QDBB
 
 from ParkingLotAnnotTool.utils.geometry import is_polygon_convex
-from ParkingLotAnnotTool.core.definequad.imgcrop import ImageCropWorker
 from ParkingLotAnnotTool.utils.resource import read_icon
 from ParkingLotAnnotTool.utils.signal import *
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
 from .canvas import CanvasPicture, CanvasScroll
 from .action import new_action
 from .lotsdata import LotsData
+from .imgcrop import ImageCropWorker
 from .videoextract import VideoExtractWorker
 
 CANVASTOOL_NONE = 0

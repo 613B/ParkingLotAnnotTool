@@ -1,6 +1,4 @@
 import cv2
-import json
-from pathlib import Path
 
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
@@ -9,8 +7,9 @@ from PyQt6.QtWidgets import *
 from ParkingLotAnnotTool.utils.resource import read_icon
 from ParkingLotAnnotTool.utils.signal import *
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
-from .canvas import CanvasPicture, CanvasScroll
 from .action import new_action
+from .canvas import CanvasPicture, CanvasScroll
+from .scenedata import SceneData
 
 epsilon = 16.0
 area_init_size = 100.0
@@ -31,6 +30,7 @@ class ClassifySceneWidget(QWidget):
         super(ClassifySceneWidget, self).__init__()
 
         self.editable = True
+        self.scene_data = SceneData()
 
         self.canvas_picture = CanvasPicture()
         self.canvas_scroll = CanvasScroll(self, self.canvas_picture)
@@ -91,34 +91,20 @@ class ClassifySceneWidget(QWidget):
     def click_open(self) -> None:
         traceback_and_exit(self.click_open_impl)
     def click_open_impl(self) -> None:
-        file_filter_img = "images (*.png *.PNG *.jpg *.jpeg *.JPG *.JPEG)"
-        file_filter_json = "json (*.json *.JSON)"
-        file_filter = f'{file_filter_img};;{file_filter_json}'
-        file_path = QFileDialog.getOpenFileName(self, "Open File", "", file_filter)
+        file_path = QFileDialog.getOpenFileName(self, "Open File", "", "scene.json (scene.json)")
         print(file_path)
         if file_path == ('', ''):
             return
-        if   file_path[1] == file_filter_img:
-            image_path = file_path[0]
-            self.lots_data.set_image_path(image_path)
-        elif file_path[1] == file_filter_json:
-            self.lots_data.json_path = file_path[0]
-            self.lots_data.load()
-            image_path = self.lots_data.get_image_path()
-        img = cv2.imread(image_path, cv2.IMREAD_COLOR)
+        self.scene_data.set_json_path(file_path[0])
+        self.scene_data.load()
+        img = cv2.imread(self.scene_data.lot_dirs[0] / self.scene_data.frame_names[0], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.canvas_scroll.fit_window()
 
     def click_save(self) -> None:
         traceback_and_exit(self.click_save_impl)
     def click_save_impl(self) -> None:
-        if self.lots_data.json_path is None:
-            file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Json File (*.json)")
-            self.lots_data.json_path = file_path
-        if self.lots_data.is_dirty() and self.lots_data.loaded():
-            self.lots_data.may_save()
-        else:
-            self.lots_data.save()
+        self.scene_data.save()
 
     def click_none(self) -> None:
         traceback_and_exit(self.click_none_impl)
@@ -247,7 +233,7 @@ class LotList(QListWidget):
         with DisableChangedSignal(self):
 
             self.clear()
-            lots = self.p.lots_data.get_lots()
+            lots = self.p.scene_data.get_lots()
             for _, lot in enumerate(lots):
                 self.addItem(f"{lot['id']}")
             select_idx = self.get_selected_lidx()
@@ -273,19 +259,6 @@ class LotList(QListWidget):
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Escape:
             self.set_selected_lidx(None)
-            self.p.canvas.set_selected_lidx(None)
-        elif event.key() == Qt.Key.Key_Delete:
-            lots_data = self.p.lots_data
-            if not lots_data.loaded():
-                return
-            if self.p.editable is False:
-                return
-            if self.get_selected_lidx() is None:
-                return
-            lots_data.delete_area(self.get_selected_lidx())
-            self.set_selected_lidx(None)
-            self.p.canvas.set_selected_lidx(None)
-            self.refresh()
 
 
 class SceneList(QListWidget):
@@ -323,20 +296,21 @@ class SceneList(QListWidget):
             self.setCurrentRow(idx)
 
     def refresh(self) -> None:
-        with DisableChangedSignal(self):
+        pass
+        # with DisableChangedSignal(self):
 
-            self.clear()
-            lots = self.p.lots_data.get_lots()
-            for _, lot in enumerate(lots):
-                self.addItem(f"{lot['id']}")
-            select_idx = self.get_selected_lidx()
-            if (select_idx is not None) and \
-               (select_idx < self.count()):
-                self.setCurrentRow(select_idx)
-            else:
-                self.setCurrentRow(-1)
+        #     self.clear()
+        #     lots = self.p.lots_data.get_lots()
+        #     for _, lot in enumerate(lots):
+        #         self.addItem(f"{lot['id']}")
+        #     select_idx = self.get_selected_lidx()
+        #     if (select_idx is not None) and \
+        #        (select_idx < self.count()):
+        #         self.setCurrentRow(select_idx)
+        #     else:
+        #         self.setCurrentRow(-1)
 
-            self.changed_impl()
+        #     self.changed_impl()
 
     def changed(self) -> None:
         traceback_and_exit(self.changed_impl)
@@ -350,18 +324,19 @@ class SceneList(QListWidget):
         self.changed_impl()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-        if event.key() == Qt.Key.Key_Escape:
-            self.set_selected_lidx(None)
-            self.p.canvas.set_selected_lidx(None)
-        elif event.key() == Qt.Key.Key_Delete:
-            lots_data = self.p.lots_data
-            if not lots_data.loaded():
-                return
-            if self.p.editable is False:
-                return
-            if self.get_selected_lidx() is None:
-                return
-            lots_data.delete_area(self.get_selected_lidx())
-            self.set_selected_lidx(None)
-            self.p.canvas.set_selected_lidx(None)
-            self.refresh()
+        pass
+        # if event.key() == Qt.Key.Key_Escape:
+        #     self.set_selected_lidx(None)
+        #     self.p.canvas.set_selected_lidx(None)
+        # elif event.key() == Qt.Key.Key_Delete:
+        #     lots_data = self.p.lots_data
+        #     if not lots_data.loaded():
+        #         return
+        #     if self.p.editable is False:
+        #         return
+        #     if self.get_selected_lidx() is None:
+        #         return
+        #     lots_data.delete_area(self.get_selected_lidx())
+        #     self.set_selected_lidx(None)
+        #     self.p.canvas.set_selected_lidx(None)
+        #     self.refresh()

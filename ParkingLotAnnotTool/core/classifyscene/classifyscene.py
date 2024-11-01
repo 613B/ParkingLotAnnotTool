@@ -56,8 +56,9 @@ class ClassifySceneWidget(QWidget):
         self.toolbar.addAction(self.view_zoom_fit_action)
         self.toolbar.addAction(self.view_zoom_1_action)
 
-        self.lot_list = LotList(self)
-        self.scene_list = SceneList(self)
+        self.lot_list = QListWidget(self)
+        self.lot_list.itemSelectionChanged.connect(self.on_lotlist_itemselection_changed)
+        self.scene_list = QListWidget(self)
 
         layout = QGridLayout(self)
         layout.addWidget(self.toolbar, 0, 0, 2, 1)  # (widget, row, col, row_size, col_size)
@@ -103,6 +104,8 @@ class ClassifySceneWidget(QWidget):
         img = cv2.imread(self.scene_data.lot_dirs[0] / self.scene_data.frame_names[0], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.canvas_scroll.fit_window()
+        self.lot_list.addItems([lot['id'] for lot in self.scene_data.get_lots()])
+        self.scene_list.addItems(self.scene_data.get_frame_names())
 
     def click_save(self) -> None:
         traceback_and_exit(self.click_save_impl)
@@ -131,6 +134,12 @@ class ClassifySceneWidget(QWidget):
 
     def on_seekbar_value_changed(self, value):
         img = cv2.imread(self.scene_data.lot_dirs[0] / self.scene_data.frame_names[value], cv2.IMREAD_COLOR)
+        self.canvas_picture.set_picture(img)
+    
+    def on_lotlist_itemselection_changed(self):
+        selected_items = self.lot_list.selectedItems()
+        frame_idx = self.seekbar.get_value()
+        img = cv2.imread(self.scene_data.parent_dir / selected_items[0].text() / self.scene_data.frame_names[frame_idx], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
 
     def refresh(self) -> None:
@@ -177,6 +186,12 @@ class SeekBarWidget(QWidget):
     def set_maxvalue(self, value):
         self.slider.setMaximum(value)
     
+    def get_value(self):
+        return self.slider.value()
+    
+    def set_value(self, value):
+        self.slider.setValue(value)
+    
     def add_busy_scene(self):
         self.scenes['busy'].add(self.slider.value())
 
@@ -202,164 +217,3 @@ class SeekBarWidget(QWidget):
                 marker = slider_rect.left() + slider_rect.width() * (scene - slider_min) / (slider_max - slider_min)
                 marker = int(marker)
                 painter.drawLine(marker, slider_rect.top(), marker, slider_rect.bottom())
-
-class DisableChangedSignal:
-
-    def __init__(self, custom_list):
-        self.l = custom_list
-        self.enable = custom_list.connect_changed_flag
-
-    def __enter__(self):
-        if self.enable:
-            self.l.disconnect_changed()
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        if self.enable:
-            self.l.connect_changed()
-
-
-class LotList(QListWidget):
-
-    def __init__(self, parent: ClassifySceneWidget):
-        super(LotList, self).__init__(parent)
-
-        self.p = parent
-
-        self.connect_changed_flag: bool = False
-        self.connect_changed()
-
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        self.setMaximumWidth(200)
-    
-    def connect_changed(self):
-        qt_connect_signal_safely(
-            self.currentItemChanged, self.changed)
-        self.connect_changed_flag = True
-    
-    def disconnect_changed(self) -> None:
-        qt_disconnect_signal_safely(
-            self.currentItemChanged, self.changed)
-        self.connect_changed_flag = False
-
-    def get_selected_lidx(self):
-        idx = self.currentRow()
-        return idx if (0 <= idx) else None
-
-    def set_selected_lidx(self, idx):
-        with DisableChangedSignal(self):
-            if idx is None:
-                self.setCurrentRow(-1)
-                return
-            self.setCurrentRow(idx)
-
-    def refresh(self) -> None:
-        with DisableChangedSignal(self):
-
-            self.clear()
-            lots = self.p.scene_data.get_lots()
-            for _, lot in enumerate(lots):
-                self.addItem(f"{lot['id']}")
-            select_idx = self.get_selected_lidx()
-            if (select_idx is not None) and \
-               (select_idx < self.count()):
-                self.setCurrentRow(select_idx)
-            else:
-                self.setCurrentRow(-1)
-
-            self.changed_impl()
-
-    def changed(self) -> None:
-        traceback_and_exit(self.changed_impl)
-    def changed_impl(self) -> None:
-        self.p.canvas.set_selected_lidx(self.get_selected_lidx())
-
-    def clear_list(self):
-        if self.count() == 0:
-            return
-        self.clear()
-        self.changed_impl()
-
-    def keyPressEvent(self, event: QKeyEvent) -> None:
-        if event.key() == Qt.Key.Key_Escape:
-            self.set_selected_lidx(None)
-
-
-class SceneList(QListWidget):
-
-    def __init__(self, parent: ClassifySceneWidget):
-        super(SceneList, self).__init__(parent)
-
-        self.p = parent
-
-        self.connect_changed_flag: bool = False
-        self.connect_changed()
-
-        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
-        self.setMaximumWidth(200)
-    
-    def connect_changed(self):
-        qt_connect_signal_safely(
-            self.currentItemChanged, self.changed)
-        self.connect_changed_flag = True
-    
-    def disconnect_changed(self) -> None:
-        qt_disconnect_signal_safely(
-            self.currentItemChanged, self.changed)
-        self.connect_changed_flag = False
-
-    def get_selected_lidx(self):
-        idx = self.currentRow()
-        return idx if (0 <= idx) else None
-
-    def set_selected_lidx(self, idx):
-        with DisableChangedSignal(self):
-            if idx is None:
-                self.setCurrentRow(-1)
-                return
-            self.setCurrentRow(idx)
-
-    def refresh(self) -> None:
-        pass
-        # with DisableChangedSignal(self):
-
-        #     self.clear()
-        #     lots = self.p.lots_data.get_lots()
-        #     for _, lot in enumerate(lots):
-        #         self.addItem(f"{lot['id']}")
-        #     select_idx = self.get_selected_lidx()
-        #     if (select_idx is not None) and \
-        #        (select_idx < self.count()):
-        #         self.setCurrentRow(select_idx)
-        #     else:
-        #         self.setCurrentRow(-1)
-
-        #     self.changed_impl()
-
-    def changed(self) -> None:
-        traceback_and_exit(self.changed_impl)
-    def changed_impl(self) -> None:
-        self.p.canvas.set_selected_lidx(self.get_selected_lidx())
-
-    def clear_list(self):
-        if self.count() == 0:
-            return
-        self.clear()
-        self.changed_impl()
-
-    def keyPressEvent(self, event: QKeyEvent) -> None:
-        pass
-        # if event.key() == Qt.Key.Key_Escape:
-        #     self.set_selected_lidx(None)
-        #     self.p.canvas.set_selected_lidx(None)
-        # elif event.key() == Qt.Key.Key_Delete:
-        #     lots_data = self.p.lots_data
-        #     if not lots_data.loaded():
-        #         return
-        #     if self.p.editable is False:
-        #         return
-        #     if self.get_selected_lidx() is None:
-        #         return
-        #     lots_data.delete_area(self.get_selected_lidx())
-        #     self.set_selected_lidx(None)
-        #     self.p.canvas.set_selected_lidx(None)
-        #     self.refresh()

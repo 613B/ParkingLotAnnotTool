@@ -18,6 +18,8 @@ class SceneData:
         self.raw_data_dir = None
         self.lot_dirs = []
         self.len_frames = None
+        self.frame_names = []
+        self.scenes = []
 
     def reset(self):
         self.may_save()
@@ -39,6 +41,7 @@ class SceneData:
         self.lot_dirs = [self.parent_dir / lot['id'] for lot in self.lots]
         self.len_frames = len(list_by_ext(self.raw_data_dir, ".jpg"))
         self.frame_names = [f'{i:05d}.jpg' for i in range(self.len_frames)]
+        self.scenes = data['scenes']
         self.dirty = False
         self._loaded = True
         return True
@@ -52,7 +55,8 @@ class SceneData:
     def save(self):
         data = {
             "version": "0.1",
-            "lots": self.lots}
+            "lots": self.lots,
+            "scenes": self.scenes}
         with open(self.json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
         self._loaded = True
@@ -70,6 +74,9 @@ class SceneData:
 
     def get_lots(self):
         return self.lots
+    
+    def get_frame_names(self):
+        return self.frame_names
 
     def set_json_path(self, path):
         if   isinstance(path, Path):

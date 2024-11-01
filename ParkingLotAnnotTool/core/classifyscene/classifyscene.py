@@ -35,6 +35,7 @@ class ClassifySceneWidget(QWidget):
         self.canvas_picture = CanvasPicture()
         self.canvas_scroll = CanvasScroll(self, self.canvas_picture)
         self.seekbar = SeekBarWidget()
+        self.seekbar.valueChanged.connect(self.on_seekbar_value_changed)
 
         self.open_action = new_action(self, 'Open', icon=read_icon('open_file.png'), slot=self.click_open)
         self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
@@ -97,6 +98,7 @@ class ClassifySceneWidget(QWidget):
             return
         self.scene_data.set_json_path(file_path[0])
         self.scene_data.load()
+        self.seekbar.set_maxvalue(self.scene_data.len_frames-1)
         img = cv2.imread(self.scene_data.lot_dirs[0] / self.scene_data.frame_names[0], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.canvas_scroll.fit_window()
@@ -146,18 +148,24 @@ class ClassifySceneWidget(QWidget):
             return CANVASTOOL_DRAW
         raise RuntimeError('no tool is checked')
 
+    def on_seekbar_value_changed(self, value):
+        img = cv2.imread(self.scene_data.lot_dirs[0] / self.scene_data.frame_names[value], cv2.IMREAD_COLOR)
+        self.canvas_picture.set_picture(img)
+
     def refresh(self) -> None:
         self.lot_list.refresh()
 
 class SeekBarWidget(QWidget):
+    valueChanged = pyqtSignal(int)
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.p = parent
         self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(100)
-        self.slider.setValue(50)
+        self.slider.setValue(0)
+        self.slider.valueChanged.connect(self.emit_value_changed)
 
         self.prev_button = QPushButton("◀")
         self.next_button = QPushButton("▶")
@@ -172,6 +180,9 @@ class SeekBarWidget(QWidget):
 
         self.setLayout(layout)
 
+    def emit_value_changed(self, value):
+        self.valueChanged.emit(value)
+
     def step_backward(self):
         value = self.slider.value()
         self.slider.setValue(max(value - 1, self.slider.minimum()))
@@ -179,6 +190,9 @@ class SeekBarWidget(QWidget):
     def step_forward(self):
         value = self.slider.value()
         self.slider.setValue(min(value + 1, self.slider.maximum()))
+    
+    def set_maxvalue(self, value):
+        self.slider.setMaximum(value)
 
 class DisableChangedSignal:
 

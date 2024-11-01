@@ -39,8 +39,9 @@ class ClassifySceneWidget(QWidget):
 
         self.open_action = new_action(self, 'Open', icon=read_icon('open_file.png'), slot=self.click_open)
         self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
-        self.draw_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_draw, checkable=True)
-        self.none_action = new_action(self, 'Free', icon_text='Free', slot=self.click_none, checkable=True)
+        # TODO setshortcut
+        self.busy_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_busy, checkable=True)
+        self.free_action = new_action(self, 'Free', icon_text='Free', slot=self.click_free, checkable=True)
         self.view_zoom_fit_action = new_action(self, 'Zoom Fit', icon=read_icon('zoom_fit.png'), slot=self.press_view_zoom_fit)
         self.view_zoom_1_action = new_action(self, 'Zoom 100%', icon=read_icon('zoom_1.png'), slot=self.press_view_zoom_1)
         self.toolbar = QToolBar()
@@ -49,8 +50,8 @@ class ClassifySceneWidget(QWidget):
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.save_action)
         self.toolbar.addSeparator()
-        self.toolbar.addAction(self.none_action)
-        self.toolbar.addAction(self.draw_action)
+        self.toolbar.addAction(self.free_action)
+        self.toolbar.addAction(self.busy_action)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.view_zoom_fit_action)
         self.toolbar.addAction(self.view_zoom_1_action)
@@ -70,8 +71,8 @@ class ClassifySceneWidget(QWidget):
         self.editable = False
         self.set_action.setEnabled(False)
         self.save_action.setEnabled(False)
-        self.none_action.setEnabled(False)
-        self.draw_action.setEnabled(False)
+        self.free_action.setEnabled(False)
+        self.busy_action.setEnabled(False)
         self.view_zoom_fit_action.setEnabled(False)
         self.view_zoom_1_action.setEnabled(False)
 
@@ -79,8 +80,8 @@ class ClassifySceneWidget(QWidget):
         self.editable = True
         self.set_action.setEnabled(True)
         self.save_action.setEnabled(True)
-        self.none_action.setEnabled(True)
-        self.draw_action.setEnabled(True)
+        self.free_action.setEnabled(True)
+        self.busy_action.setEnabled(True)
         self.view_zoom_fit_action.setEnabled(True)
         self.view_zoom_1_action.setEnabled(True)
 
@@ -108,15 +109,15 @@ class ClassifySceneWidget(QWidget):
     def click_save_impl(self) -> None:
         self.scene_data.save()
 
-    def click_none(self) -> None:
-        traceback_and_exit(self.click_none_impl)
-    def click_none_impl(self) -> None:
-        self.check_canvastool(CANVASTOOL_NONE)
+    def click_free(self) -> None:
+        traceback_and_exit(self.click_free_impl)
+    def click_free_impl(self) -> None:
+        self.seekbar.add_free_scene()
 
-    def click_draw(self) -> None:
-        traceback_and_exit(self.click_draw_impl)
-    def click_draw_impl(self) -> None:
-        self.check_canvastool(CANVASTOOL_DRAW)
+    def click_busy(self) -> None:
+        traceback_and_exit(self.click_busy_impl)
+    def click_busy_impl(self) -> None:
+        self.seekbar.add_busy_scene()
 
     def press_view_zoom_fit(self) -> None:
         traceback_and_exit(self.press_view_zoom_fit_impl)
@@ -127,26 +128,6 @@ class ClassifySceneWidget(QWidget):
         traceback_and_exit(self.press_view_zoom_1_impl)
     def press_view_zoom_1_impl(self) -> None:
         self.canvas_scroll.set_zoom(100)
-
-    def clear_canvastool(self) -> None:
-        self.none_action.setChecked(False)
-        self.draw_action.setChecked(False)
-
-    def check_canvastool(self, tool) -> None:
-        self.clear_canvastool()
-        if   tool == CANVASTOOL_NONE:
-            self.none_action.setChecked(True)
-        elif tool == CANVASTOOL_DRAW:
-            self.draw_action.setChecked(True)
-        else:
-            raise RuntimeError(f'tool={tool}')
-
-    def get_canvastool(self) -> None:
-        if self.none_action.isChecked():
-            return CANVASTOOL_NONE
-        if self.draw_action.isChecked():
-            return CANVASTOOL_DRAW
-        raise RuntimeError('no tool is checked')
 
     def on_seekbar_value_changed(self, value):
         img = cv2.imread(self.scene_data.lot_dirs[0] / self.scene_data.frame_names[value], cv2.IMREAD_COLOR)
@@ -166,6 +147,8 @@ class SeekBarWidget(QWidget):
         self.slider.setMaximum(100)
         self.slider.setValue(0)
         self.slider.valueChanged.connect(self.emit_value_changed)
+
+        self.scenes = {'busy': set([]), 'free': set([])}
 
         self.prev_button = QPushButton("◀")
         self.next_button = QPushButton("▶")
@@ -193,6 +176,32 @@ class SeekBarWidget(QWidget):
     
     def set_maxvalue(self, value):
         self.slider.setMaximum(value)
+    
+    def add_busy_scene(self):
+        self.scenes['busy'].add(self.slider.value())
+
+    def add_free_scene(self):
+        self.scenes['free'].add(self.slider.value())
+    
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+
+        slider_rect = self.slider.geometry()
+        slider_min = self.slider.minimum()
+        slider_max = self.slider.maximum()
+        pen_free = QPen(QColor("green"), 2)
+        pen_busy = QPen(QColor("red"), 2)
+
+        for key, scenes_set in self.scenes.items():
+            if key == 'free':
+                painter.setPen(pen_free)
+            if key == 'busy':
+                painter.setPen(pen_busy)
+            for scene in scenes_set:
+                marker = slider_rect.left() + slider_rect.width() * (scene - slider_min) / (slider_max - slider_min)
+                marker = int(marker)
+                painter.drawLine(marker, slider_rect.top(), marker, slider_rect.bottom())
 
 class DisableChangedSignal:
 

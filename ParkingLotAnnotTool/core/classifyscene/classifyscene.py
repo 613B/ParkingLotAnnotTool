@@ -40,8 +40,8 @@ class ClassifySceneWidget(QWidget):
         self.open_action = new_action(self, 'Open', icon=read_icon('open_file.png'), slot=self.click_open)
         self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
         # TODO setshortcut
-        self.busy_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_busy, checkable=True)
-        self.free_action = new_action(self, 'Free', icon_text='Free', slot=self.click_free, checkable=True)
+        self.busy_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_busy)
+        self.free_action = new_action(self, 'Free', icon_text='Free', slot=self.click_free)
         self.view_zoom_fit_action = new_action(self, 'Zoom Fit', icon=read_icon('zoom_fit.png'), slot=self.press_view_zoom_fit)
         self.view_zoom_1_action = new_action(self, 'Zoom 100%', icon=read_icon('zoom_1.png'), slot=self.press_view_zoom_1)
         self.toolbar = QToolBar()
@@ -105,7 +105,7 @@ class ClassifySceneWidget(QWidget):
         self.canvas_picture.set_picture(img)
         self.canvas_scroll.fit_window()
         self.lot_list.addItems([lot['id'] for lot in self.scene_data.get_lots()])
-        self.scene_list.addItems(self.scene_data.get_frame_names())
+        self.lot_list.setCurrentRow(0)
 
     def click_save(self) -> None:
         traceback_and_exit(self.click_save_impl)
@@ -115,12 +115,26 @@ class ClassifySceneWidget(QWidget):
     def click_free(self) -> None:
         traceback_and_exit(self.click_free_impl)
     def click_free_impl(self) -> None:
+        if self.scene_list.findItems(self.seekbar.get_value_str(), Qt.MatchFlag.MatchContains):
+            return
+        self.busy_action.setEnabled(True)
+        self.free_action.setEnabled(False)
         self.seekbar.add_free_scene()
+        self.scene_list.addItem(f'F: {self.seekbar.get_value_str()}')
+        self.scene_data.scenes[self.lot_list.selectedItems()[0].text()].append(
+            {"label": "free", "frame": self.seekbar.get_value_str()})
 
     def click_busy(self) -> None:
         traceback_and_exit(self.click_busy_impl)
     def click_busy_impl(self) -> None:
+        if self.scene_list.findItems(self.seekbar.get_value_str(), Qt.MatchFlag.MatchContains):
+            return
+        self.busy_action.setEnabled(False)
+        self.free_action.setEnabled(True)
         self.seekbar.add_busy_scene()
+        self.scene_list.addItem(f'B: {self.seekbar.get_value_str()}')
+        self.scene_data.scenes[self.lot_list.selectedItems()[0].text()].append(
+            {"label": "busy", "frame": self.seekbar.get_value_str()})
 
     def press_view_zoom_fit(self) -> None:
         traceback_and_exit(self.press_view_zoom_fit_impl)
@@ -133,7 +147,10 @@ class ClassifySceneWidget(QWidget):
         self.canvas_scroll.set_zoom(100)
 
     def on_seekbar_value_changed(self, value):
-        img = cv2.imread(self.scene_data.lot_dirs[0] / self.scene_data.frame_names[value], cv2.IMREAD_COLOR)
+        selected_items = self.lot_list.selectedItems()
+        if not selected_items:
+            return
+        img = cv2.imread(self.scene_data.parent_dir / selected_items[0].text() / self.scene_data.frame_names[value], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
     
     def on_lotlist_itemselection_changed(self):
@@ -141,6 +158,23 @@ class ClassifySceneWidget(QWidget):
         frame_idx = self.seekbar.get_value()
         img = cv2.imread(self.scene_data.parent_dir / selected_items[0].text() / self.scene_data.frame_names[frame_idx], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
+        self.scene_list.clear()
+        self.seekbar.reset_scenes()
+        scenes = self.scene_data.scenes[selected_items[0].text()]
+        self.busy_action.setEnabled(True)
+        self.free_action.setEnabled(True)
+        if scenes:
+            if   scenes[-1]["label"] == "busy":
+                self.busy_action.setEnabled(False)
+            elif scenes[-1]["label"] == "free":
+                self.free_action.setEnabled(False)
+        for scene in scenes:
+            self.seekbar.set_value(int(scene["frame"]))
+            if   scene["label"] == "busy":
+                self.seekbar.add_busy_scene()
+            elif scene["label"] == "free":
+                self.seekbar.add_free_scene()
+            self.scene_list.addItem(f'B: {scene["frame"]}')
 
     def refresh(self) -> None:
         self.lot_list.refresh()
@@ -172,6 +206,10 @@ class SeekBarWidget(QWidget):
 
         self.setLayout(layout)
 
+    def reset_scenes(self):
+        self.scenes = {'busy': set([]), 'free': set([])}
+        self.repaint()
+
     def emit_value_changed(self, value):
         self.valueChanged.emit(value)
 
@@ -188,6 +226,9 @@ class SeekBarWidget(QWidget):
     
     def get_value(self):
         return self.slider.value()
+    
+    def get_value_str(self):
+        return f"{self.slider.value():05d}"
     
     def set_value(self, value):
         self.slider.setValue(value)

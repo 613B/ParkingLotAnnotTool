@@ -19,7 +19,7 @@ class SceneData:
         self.lot_dirs = []
         self.len_frames = None
         self.frame_names = []
-        self.scenes = []
+        self.scenes = {}
 
     def reset(self):
         self.may_save()

@@ -55,6 +55,7 @@ class SceneData:
     def save(self):
         data = {
             "version": "0.1",
+            "video_path": str(self.video_path),
             "lots": self.lots,
             "scenes": self.scenes}
         with open(self.json_path, 'w', encoding='utf-8') as file:

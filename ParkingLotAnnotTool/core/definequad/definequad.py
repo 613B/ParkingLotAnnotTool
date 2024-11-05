@@ -202,8 +202,10 @@ class DefineQuadWidget(QWidget):
             "version": "0.1",
             "video_path": str(video_path),
             "lots": self.lots_data.get_lots(),
-            "scenes": []
+            "scenes": {}
         }
+        for lot in self.lots_data.get_lots():
+            data["scenes"][lot["id"]] = []
         self.scene_json_path = outdir_path / "scene.json"
         with open(self.scene_json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)

@@ -122,6 +122,7 @@ class DefineQuadWidget(QWidget):
             self.lots_data.json_path = file_path[0]
             self.lots_data.load()
             image_path = self.lots_data.get_image_path()
+        self.lot_list.refresh()
         img = cv2.imread(image_path, cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.canvas_scroll.fit_window()

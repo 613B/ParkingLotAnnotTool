@@ -42,6 +42,7 @@ class ClassifySceneWidget(QWidget):
         # TODO setshortcut
         self.busy_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_busy)
         self.free_action = new_action(self, 'Free', icon_text='Free', slot=self.click_free)
+        self.undo_action = new_action(self, 'Undo', icon_text='Undo', slot=self.click_undo)
         self.view_zoom_fit_action = new_action(self, 'Zoom Fit', icon=read_icon('zoom_fit.png'), slot=self.press_view_zoom_fit)
         self.view_zoom_1_action = new_action(self, 'Zoom 100%', icon=read_icon('zoom_1.png'), slot=self.press_view_zoom_1)
         self.toolbar = QToolBar()
@@ -52,6 +53,8 @@ class ClassifySceneWidget(QWidget):
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.free_action)
         self.toolbar.addAction(self.busy_action)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(self.undo_action)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.view_zoom_fit_action)
         self.toolbar.addAction(self.view_zoom_1_action)
@@ -74,6 +77,7 @@ class ClassifySceneWidget(QWidget):
         self.save_action.setEnabled(False)
         self.free_action.setEnabled(False)
         self.busy_action.setEnabled(False)
+        self.undo_action.setEnabled(False)
         self.view_zoom_fit_action.setEnabled(False)
         self.view_zoom_1_action.setEnabled(False)
 
@@ -83,6 +87,7 @@ class ClassifySceneWidget(QWidget):
         self.save_action.setEnabled(True)
         self.free_action.setEnabled(True)
         self.busy_action.setEnabled(True)
+        self.undo_action.setEnabled(True)
         self.view_zoom_fit_action.setEnabled(True)
         self.view_zoom_1_action.setEnabled(True)
 
@@ -136,6 +141,31 @@ class ClassifySceneWidget(QWidget):
         self.scene_data.scenes[self.lot_list.selectedItems()[0].text()].append(
             {"label": "busy", "frame": self.seekbar.get_value_str()})
 
+    def click_undo(self) -> None:
+        traceback_and_exit(self.click_undo_impl)
+    def click_undo_impl(self) -> None:
+        if self.scene_list.count() <= 0:
+            return
+        last_item = self.scene_list.takeItem(self.scene_list.count() - 1)
+        parts = last_item.text().split(": ")
+        label = parts[0]
+        frame = parts[1]
+        if   label == "B":
+            self.seekbar.remove_busy_scene(int(frame))
+            self.busy_action.setEnabled(True)
+            self.free_action.setEnabled(False)
+            self.scene_data.scenes[self.lot_list.selectedItems()[0].text()].remove(
+                {"label": "busy", "frame": frame})
+        elif label == "F":
+            self.seekbar.remove_free_scene(int(frame))
+            self.busy_action.setEnabled(False)
+            self.free_action.setEnabled(True)
+            self.scene_data.scenes[self.lot_list.selectedItems()[0].text()].remove(
+                {"label": "free", "frame": frame})
+        if self.scene_list.count() == 0:
+            self.busy_action.setEnabled(True)
+            self.free_action.setEnabled(True) 
+
     def press_view_zoom_fit(self) -> None:
         traceback_and_exit(self.press_view_zoom_fit_impl)
     def press_view_zoom_fit_impl(self) -> None:
@@ -172,9 +202,10 @@ class ClassifySceneWidget(QWidget):
             self.seekbar.set_value(int(scene["frame"]))
             if   scene["label"] == "busy":
                 self.seekbar.add_busy_scene()
+                self.scene_list.addItem(f'B: {scene["frame"]}')
             elif scene["label"] == "free":
                 self.seekbar.add_free_scene()
-            self.scene_list.addItem(f'B: {scene["frame"]}')
+                self.scene_list.addItem(f'F: {scene["frame"]}')
 
     def refresh(self) -> None:
         self.lot_list.refresh()
@@ -238,6 +269,12 @@ class SeekBarWidget(QWidget):
 
     def add_free_scene(self):
         self.scenes['free'].add(self.slider.value())
+    
+    def remove_busy_scene(self, value):
+        self.scenes['busy'].remove(value)
+
+    def remove_free_scene(self, value):
+        self.scenes['free'].remove(value)
     
     def paintEvent(self, event):
         super().paintEvent(event)

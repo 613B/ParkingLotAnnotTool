@@ -227,8 +227,17 @@ class SeekBarWidget(QWidget):
         self.prev_button = QPushButton("◀")
         self.next_button = QPushButton("▶")
 
-        self.prev_button.clicked.connect(self.step_backward)
-        self.next_button.clicked.connect(self.step_forward)
+        self.prev_button.pressed.connect(self.start_prev_timer)
+        self.prev_button.released.connect(self.stop_timer_and_update)
+        self.next_button.pressed.connect(self.start_next_timer)
+        self.next_button.released.connect(self.stop_timer_and_update)
+
+        self.timer = QTimer(self)
+        self.timer.setInterval(100)  # msec
+        self.timer.timeout.connect(self.update_index)
+
+        self.increment = 0
+        self.long_press_detected = False
 
         layout = QHBoxLayout()
         layout.addWidget(self.prev_button)
@@ -237,20 +246,33 @@ class SeekBarWidget(QWidget):
 
         self.setLayout(layout)
 
+    def start_next_timer(self):
+        self.increment = 1
+        self.long_press_detected = False
+        self.timer.start()
+
+    def start_prev_timer(self):
+        self.increment = -1
+        self.long_press_detected = False
+        self.timer.start()
+
+    def stop_timer_and_update(self):
+        self.timer.stop()
+        if not self.long_press_detected:
+            value = self.slider.value()
+            self.slider.setValue(max(value + self.increment, self.slider.minimum()))
+    
+    def update_index(self):
+        self.long_press_detected = True
+        value = self.slider.value()
+        self.slider.setValue(max(value + self.increment, self.slider.minimum()))
+    
     def reset_scenes(self):
         self.scenes = {'busy': set([]), 'free': set([])}
         self.repaint()
 
     def emit_value_changed(self, value):
         self.valueChanged.emit(value)
-
-    def step_backward(self):
-        value = self.slider.value()
-        self.slider.setValue(max(value - 1, self.slider.minimum()))
-
-    def step_forward(self):
-        value = self.slider.value()
-        self.slider.setValue(min(value + 1, self.slider.maximum()))
     
     def set_maxvalue(self, value):
         self.slider.setMaximum(value)

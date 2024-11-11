@@ -25,14 +25,18 @@ def main():
     app = QCoreApplication(sys.argv)
     progress_bar = tqdm(total=100)
 
+    def update_progress(value):
+        progress_bar.n = value
+        progress_bar.refresh()
+
     if   args.cmd=="extract_frames":
         worker = VideoExtractWorker(Path(args.input_video), Path(args.output_dir), args.interval)
-        worker.progress.connect(progress_bar.update)
+        worker.progress.connect(update_progress)
         worker.finished.connect(app.quit)
         worker.start()
     elif args.cmd=="crop_images":
         worker = ImageCropWorker(Path(args.input_json))
-        worker.progress.connect(progress_bar.update)
+        worker.progress.connect(update_progress)
         worker.finished.connect(app.quit)
         worker.start()
 

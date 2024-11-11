@@ -62,6 +62,7 @@ class ClassifySceneWidget(QWidget):
         self.lot_list = QListWidget(self)
         self.lot_list.itemSelectionChanged.connect(self.on_lotlist_itemselection_changed)
         self.scene_list = QListWidget(self)
+        self.scene_list.itemSelectionChanged.connect(self.on_scenelist_itemselection_changed)
 
         layout = QGridLayout(self)
         layout.addWidget(self.toolbar, 0, 0, 2, 1)  # (widget, row, col, row_size, col_size)
@@ -206,6 +207,24 @@ class ClassifySceneWidget(QWidget):
             elif scene["label"] == "free":
                 self.seekbar.add_free_scene()
                 self.scene_list.addItem(f'F: {scene["frame"]}')
+
+    def on_scenelist_itemselection_changed(self):
+        selected_items = self.scene_list.selectedItems()
+        if not selected_items:
+            return
+        current_lot = self.lot_list.currentItem()
+        parts = selected_items[0].text().split(": ")
+        label = parts[0]
+        frame = parts[1]
+        img = cv2.imread(self.scene_data.parent_dir / current_lot.text() / (frame + ".jpg"), cv2.IMREAD_COLOR)
+        self.canvas_picture.set_picture(img)
+        self.seekbar.set_value(int(frame))
+        if   label == "B":
+            self.busy_action.setEnabled(False)
+            self.free_action.setEnabled(True)
+        elif label == "F":
+            self.busy_action.setEnabled(True)
+            self.free_action.setEnabled(False)
 
     def refresh(self) -> None:
         self.lot_list.refresh()

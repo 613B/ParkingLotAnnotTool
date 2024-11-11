@@ -58,10 +58,10 @@ class ImageCropWorker(QThread):
         return max(contours, key=lambda item: item[0])[0]
 
     def get_ymin(self, contours: List[Tuple[int, int]]):
-        return min(contours, key=lambda item: item[0])[1]
+        return min(contours, key=lambda item: item[1])[1]
 
     def get_ymax(self, contours: List[Tuple[int, int]]):
-        return max(contours, key=lambda item: item[0])[1]
+        return max(contours, key=lambda item: item[1])[1]
 
     def imgcrop(self, image: Image, contours: List[Tuple[int, int]]) -> Image:
         xmin = self.get_xmin(contours)

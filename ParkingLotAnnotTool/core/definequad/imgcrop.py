@@ -68,15 +68,28 @@ class ImageCropWorker(QThread):
         xmax = self.get_xmax(contours)
         ymin = self.get_ymin(contours)
         ymax = self.get_ymax(contours)
+        w = xmax - xmin
+        h = ymax - ymin
 
         img_cropped = image.crop((xmin, ymin, xmax, ymax))
-        img_cropped_r = img_cropped.resize((self.MODEL_WIDTH, self.MODEL_HEIGHT))
-        contours_r = self.get_resized_contours(contours, (self.MODEL_WIDTH, self.MODEL_HEIGHT), offset=True)
-        mask = Image.new("L", (self.MODEL_WIDTH, self.MODEL_HEIGHT), 0)
+        aspect_ratio = w / h
+        if w > h:
+            w_r = self.MODEL_WIDTH
+            h_r = int(self.MODEL_HEIGHT / aspect_ratio)
+        else:
+            h_r = self.MODEL_HEIGHT
+            w_r = int(self.MODEL_WIDTH / aspect_ratio)
+        img_cropped_r = img_cropped.resize((w_r, h_r))
+        contours_r = self.get_resized_contours(contours, (w_r, h_r), offset=True)
+        mask = Image.new("L", (w_r, h_r), 0)
         draw = ImageDraw.Draw(mask)
         draw.polygon(contours_r, fill=255, outline=None)
-        black =  Image.new("RGB", (self.MODEL_WIDTH, self.MODEL_HEIGHT), (0, 0, 0))
-        return Image.composite(img_cropped_r, black, mask)
+        black =  Image.new("RGB", (w_r, h_r), (0, 0, 0))
+        crop_polygon = Image.composite(img_cropped_r, black, mask)
+        black_square = Image.new("RGB", (self.MODEL_WIDTH, self.MODEL_HEIGHT), (0, 0, 0))
+        offset = ((self.MODEL_WIDTH - w_r) // 2, (self.MODEL_HEIGHT - h_r) // 2)
+        black_square.paste(crop_polygon, offset)
+        return black_square
 
     def get_resized_contours(self, contours, size, offset=False):
         xmin = self.get_xmin(contours)

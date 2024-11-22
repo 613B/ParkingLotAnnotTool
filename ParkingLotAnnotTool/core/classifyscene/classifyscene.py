@@ -107,11 +107,11 @@ class ClassifySceneWidget(QWidget):
             return
         self.scene_data.set_json_path(file_path[0])
         self.scene_data.load()
-        self.seekbar.set_maxvalue(self.scene_data.len_frames-1)
-        img = cv2.imread(self.scene_data.lot_dirs[0] / self.scene_data.frame_names[0], cv2.IMREAD_COLOR)
+        self.seekbar.set_maxvalue(self.scene_data.len_frames()-1)
+        img = cv2.imread(self.scene_data.lot_dirs()[0] / self.scene_data.frame_names()[0], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.canvas_scroll.fit_window()
-        self.lot_list.addItems([lot['id'] for lot in self.scene_data.get_lots()])
+        self.lot_list.addItems([lot['id'] for lot in self.scene_data.lots()])
         self.lot_list.setCurrentRow(0)
 
     def click_save(self) -> None:
@@ -128,8 +128,9 @@ class ClassifySceneWidget(QWidget):
         self.free_action.setEnabled(False)
         self.seekbar.add_free_scene()
         self.scene_list.addItem(f'F: {self.seekbar.get_value_str()}')
-        self.scene_data.scenes[self.lot_list.selectedItems()[0].text()].append(
-            {"label": "free", "frame": self.seekbar.get_value_str()})
+        self.scene_data.add_scene(
+            key=self.lot_list.selectedItems()[0].text(),
+            scene={"label": "free", "frame": self.seekbar.get_value_str()})
 
     def click_busy(self) -> None:
         traceback_and_exit(self.click_busy_impl)
@@ -140,8 +141,9 @@ class ClassifySceneWidget(QWidget):
         self.free_action.setEnabled(True)
         self.seekbar.add_busy_scene()
         self.scene_list.addItem(f'B: {self.seekbar.get_value_str()}')
-        self.scene_data.scenes[self.lot_list.selectedItems()[0].text()].append(
-            {"label": "busy", "frame": self.seekbar.get_value_str()})
+        self.scene_data.add_scene(
+            key=self.lot_list.selectedItems()[0].text(),
+            scene={"label": "busy", "frame": self.seekbar.get_value_str()})
 
     def click_undo(self) -> None:
         traceback_and_exit(self.click_undo_impl)
@@ -156,14 +158,16 @@ class ClassifySceneWidget(QWidget):
             self.seekbar.remove_busy_scene(int(frame))
             self.busy_action.setEnabled(True)
             self.free_action.setEnabled(False)
-            self.scene_data.scenes[self.lot_list.selectedItems()[0].text()].remove(
-                {"label": "busy", "frame": frame})
+            self.scene_data.remove_scene(
+                key=self.lot_list.selectedItems()[0].text(),
+                scene={"label": "busy", "frame": frame})
         elif label == "F":
             self.seekbar.remove_free_scene(int(frame))
             self.busy_action.setEnabled(False)
             self.free_action.setEnabled(True)
-            self.scene_data.scenes[self.lot_list.selectedItems()[0].text()].remove(
-                {"label": "free", "frame": frame})
+            self.scene_data.remove_scene(
+                key=self.lot_list.selectedItems()[0].text(),
+                scene={"label": "free", "frame": frame})
         if self.scene_list.count() == 0:
             self.busy_action.setEnabled(True)
             self.free_action.setEnabled(True) 
@@ -182,17 +186,17 @@ class ClassifySceneWidget(QWidget):
         selected_items = self.lot_list.selectedItems()
         if not selected_items:
             return
-        img = cv2.imread(self.scene_data.parent_dir / selected_items[0].text() / self.scene_data.frame_names[value], cv2.IMREAD_COLOR)
+        img = cv2.imread(self.scene_data.parent_dir() / selected_items[0].text() / self.scene_data.frame_names()[value], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
     
     def on_lotlist_itemselection_changed(self):
         selected_items = self.lot_list.selectedItems()
         frame_idx = self.seekbar.get_value()
-        img = cv2.imread(self.scene_data.parent_dir / selected_items[0].text() / self.scene_data.frame_names[frame_idx], cv2.IMREAD_COLOR)
+        img = cv2.imread(self.scene_data.parent_dir() / selected_items[0].text() / self.scene_data.frame_names()[frame_idx], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.scene_list.clear()
         self.seekbar.reset_scenes()
-        scenes = self.scene_data.scenes[selected_items[0].text()]
+        scenes = self.scene_data.scenes()[selected_items[0].text()]
         self.busy_action.setEnabled(True)
         self.free_action.setEnabled(True)
         if scenes:
@@ -217,7 +221,7 @@ class ClassifySceneWidget(QWidget):
         parts = selected_items[0].text().split(": ")
         label = parts[0]
         frame = parts[1]
-        img = cv2.imread(self.scene_data.parent_dir / current_lot.text() / (frame + ".jpg"), cv2.IMREAD_COLOR)
+        img = cv2.imread(self.scene_data.parent_dir() / current_lot.text() / (frame + ".jpg"), cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.seekbar.set_value(int(frame))
         if   label == "B":

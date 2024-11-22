@@ -7,8 +7,8 @@ from PyQt6.QtWidgets import *
 from ParkingLotAnnotTool.utils.resource import read_icon
 from ParkingLotAnnotTool.utils.signal import *
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
-from .action import new_action
-from .canvas import CanvasPicture, CanvasScroll
+from ..general.action import new_action
+from ..general.canvas import CanvasPicture, CanvasScroll
 from .scenedata import SceneData
 
 epsilon = 16.0

@@ -130,7 +130,7 @@ class ClassifySceneWidget(QWidget):
         self.busy_action.setEnabled(True)
         self.free_action.setEnabled(False)
         self.seekbar.add_free_scene()
-        self.scene_list.addItem(f'F: {self.seekbar.get_value_str()}')
+        self.scene_list.addItem(f'free, {self.seekbar.get_value_str()}')
         self.scene_data.add_scene(
             key=self.lot_list.selectedItems()[0].text(),
             scene={"label": "free", "frame": self.seekbar.get_value_str()})
@@ -143,7 +143,7 @@ class ClassifySceneWidget(QWidget):
         self.busy_action.setEnabled(False)
         self.free_action.setEnabled(True)
         self.seekbar.add_busy_scene()
-        self.scene_list.addItem(f'B: {self.seekbar.get_value_str()}')
+        self.scene_list.addItem(f'busy, {self.seekbar.get_value_str()}')
         self.scene_data.add_scene(
             key=self.lot_list.selectedItems()[0].text(),
             scene={"label": "busy", "frame": self.seekbar.get_value_str()})
@@ -154,17 +154,17 @@ class ClassifySceneWidget(QWidget):
         if self.scene_list.count() <= 0:
             return
         last_item = self.scene_list.takeItem(self.scene_list.count() - 1)
-        parts = last_item.text().split(": ")
+        parts = last_item.text().split(", ")
         label = parts[0]
         frame = parts[1]
-        if   label == "B":
+        if   label == "busy":
             self.seekbar.remove_busy_scene(int(frame))
             self.busy_action.setEnabled(True)
             self.free_action.setEnabled(False)
             self.scene_data.remove_scene(
                 key=self.lot_list.selectedItems()[0].text(),
                 scene={"label": "busy", "frame": frame})
-        elif label == "F":
+        elif label == "free":
             self.seekbar.remove_free_scene(int(frame))
             self.busy_action.setEnabled(False)
             self.free_action.setEnabled(True)
@@ -214,26 +214,26 @@ class ClassifySceneWidget(QWidget):
             self.seekbar.set_value(int(scene["frame"]))
             if   scene["label"] == "busy":
                 self.seekbar.add_busy_scene()
-                self.scene_list.addItem(f'B: {scene["frame"]}')
+                self.scene_list.addItem(f'busy, {scene["frame"]}')
             elif scene["label"] == "free":
                 self.seekbar.add_free_scene()
-                self.scene_list.addItem(f'F: {scene["frame"]}')
+                self.scene_list.addItem(f'free, {scene["frame"]}')
 
     def on_scenelist_itemselection_changed(self):
         selected_items = self.scene_list.selectedItems()
         if not selected_items:
             return
         current_lot = self.lot_list.currentItem()
-        parts = selected_items[0].text().split(": ")
+        parts = selected_items[0].text().split(", ")
         label = parts[0]
         frame = parts[1]
         img = cv2.imread(self.scene_data.parent_dir() / current_lot.text() / (frame + ".jpg"), cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.seekbar.set_value(int(frame))
-        if   label == "B":
+        if   label == "busy":
             self.busy_action.setEnabled(False)
             self.free_action.setEnabled(True)
-        elif label == "F":
+        elif label == "free":
             self.busy_action.setEnabled(True)
             self.free_action.setEnabled(False)
 

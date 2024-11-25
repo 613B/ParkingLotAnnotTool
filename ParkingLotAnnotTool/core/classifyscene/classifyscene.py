@@ -9,7 +9,7 @@ from ParkingLotAnnotTool.utils.signal import *
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
 from ..general.action import new_action
 from ..general.canvas import CanvasPicture, CanvasScroll
-from .scenedata import SceneData
+from .scenedata import SceneData, SceneDataInfoWidget
 from .seekbar import SeekBarWidget
 
 epsilon = 16.0
@@ -26,12 +26,14 @@ CANVASTOOL_NONE = 0
 CANVASTOOL_DRAW = 1
 
 class ClassifySceneWidget(QWidget):
-
     def __init__(self):
         super(ClassifySceneWidget, self).__init__()
 
         self.editable = True
         self.scene_data = SceneData()
+        self.scene_data_info = SceneDataInfoWidget(self.scene_data)
+        self.scene_data.current_frame_changed.connect(self.scene_data_info.update)
+        self.scene_data.current_lot_id_changed.connect(self.scene_data_info.update)
 
         self.canvas_picture = CanvasPicture()
         self.canvas_scroll = CanvasScroll(self, self.canvas_picture)
@@ -68,9 +70,10 @@ class ClassifySceneWidget(QWidget):
         layout = QGridLayout(self)
         layout.addWidget(self.toolbar, 0, 0, 2, 1)  # (widget, row, col, row_size, col_size)
         layout.addWidget(self.canvas_scroll, 0, 1, 1, 1)
-        layout.addWidget(self.seekbar, 1, 1, 1, 1)
-        layout.addWidget(self.scene_list, 0, 2, 2, 1)
-        layout.addWidget(self.lot_list, 0, 3, 2, 1)
+        layout.addWidget(self.scene_data_info, 0, 2, 1, 1)
+        layout.addWidget(self.seekbar, 1, 1, 1, 2)
+        layout.addWidget(self.scene_list, 0, 3, 2, 1)
+        layout.addWidget(self.lot_list, 0, 4, 2, 1)
         self.setLayout(layout)
 
     def enable_add_preset(self) -> None:
@@ -188,15 +191,18 @@ class ClassifySceneWidget(QWidget):
             return
         img = cv2.imread(self.scene_data.parent_dir() / selected_items[0].text() / self.scene_data.frame_names()[value], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
+        self.scene_data.update_current_frame(self.seekbar.get_value_str())
     
     def on_lotlist_itemselection_changed(self):
         selected_items = self.lot_list.selectedItems()
         frame_idx = self.seekbar.get_value()
-        img = cv2.imread(self.scene_data.parent_dir() / selected_items[0].text() / self.scene_data.frame_names()[frame_idx], cv2.IMREAD_COLOR)
+        lot_id = selected_items[0].text()
+        self.scene_data.update_current_lot_id(lot_id)
+        img = cv2.imread(self.scene_data.parent_dir() / lot_id / self.scene_data.frame_names()[frame_idx], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.scene_list.clear()
         self.seekbar.reset_scenes()
-        scenes = self.scene_data.scenes()[selected_items[0].text()]
+        scenes = self.scene_data.scenes()[lot_id]
         self.busy_action.setEnabled(True)
         self.free_action.setEnabled(True)
         if scenes:

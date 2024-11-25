@@ -12,18 +12,6 @@ from ..general.canvas import CanvasPicture, CanvasScroll
 from .scenedata import SceneData, SceneDataInfoWidget
 from .seekbar import SeekBarWidget
 
-epsilon = 16.0
-area_init_size = 100.0
-point_size = 8
-
-lot_default_fill_color       = QColor(  0, 128, 255, 155)
-lot_highlighted_fill_color   = QColor(  0,   0, 255, 200)
-lot_selected_fill_color      = QColor(  0,   0, 255, 128)
-point_default_fill_color     = QColor(255,   0,   0, 128)
-point_highlighted_fill_color = QColor(255, 153,   0, 255)
-
-CANVASTOOL_NONE = 0
-CANVASTOOL_DRAW = 1
 
 class ClassifySceneWidget(QWidget):
     def __init__(self):

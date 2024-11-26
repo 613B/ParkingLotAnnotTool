@@ -64,26 +64,6 @@ class ClassifySceneWidget(QWidget):
         layout.addWidget(self.lot_list, 0, 4, 2, 1)
         self.setLayout(layout)
 
-    def enable_add_preset(self) -> None:
-        self.editable = False
-        self.set_action.setEnabled(False)
-        self.save_action.setEnabled(False)
-        self.free_action.setEnabled(False)
-        self.busy_action.setEnabled(False)
-        self.undo_action.setEnabled(False)
-        self.view_zoom_fit_action.setEnabled(False)
-        self.view_zoom_1_action.setEnabled(False)
-
-    def disable_add_preset(self) -> None:
-        self.editable = True
-        self.set_action.setEnabled(True)
-        self.save_action.setEnabled(True)
-        self.free_action.setEnabled(True)
-        self.busy_action.setEnabled(True)
-        self.undo_action.setEnabled(True)
-        self.view_zoom_fit_action.setEnabled(True)
-        self.view_zoom_1_action.setEnabled(True)
-
     def changed_zoom(self):
         traceback_and_exit(self.changed_zoom_impl)
     def changed_zoom_impl(self):

@@ -444,7 +444,6 @@ class LotList(QListWidget):
     def __init__(self, lots_data: LotsData, parent=None):
         super(LotList, self).__init__(parent)
         self._lots_data = lots_data
-        self._selected_idx = None
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setMaximumWidth(200)
         self.currentRowChanged.connect(self.on_current_row_changed)

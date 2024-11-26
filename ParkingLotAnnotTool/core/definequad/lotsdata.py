@@ -1,52 +1,84 @@
 import json
 from typing import Optional
+from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QMessageBox as QMB
 
 from ParkingLotAnnotTool.utils.geometry import *
 
-class LotsData:
+class LotsData(QObject):
+
+    data_changed = pyqtSignal()
+    selected_idx_changed = pyqtSignal()
 
     def __init__(self):
-        self.lots: Optional[list] = []
-        self.dirty: bool = False
+        super().__init__()
+        self._lots: Optional[list] = []
+        self._dirty: bool = False
         self._loaded: bool = False
-        self.json_path = None
-        self.image_path = None
+        self._json_path = None
+        self._image_path = None
+
+        self._addable = False
+        self._editable = False
+        self._selected_idx = None
 
     def reset(self):
         self.may_save()
-        self.lots = []
-        self.dirty = False
+        self._lots = []
+        self._dirty = False
+        self._selected_idx = None
+        self.data_changed.emit()
 
     def load(self) -> bool:
         self.may_save()
-        with open(self.json_path, 'r', encoding='utf-8') as file:
+        with open(self._json_path, 'r', encoding='utf-8') as file:
             data = json.load(file)
-        self.image_path = data['image_path']
-        self.lots = data['lots']
-        self.dirty = False
+        self._image_path = data['image_path']
+        self._lots = data['lots']
+        self._dirty = False
         self._loaded = True
+        self._selected_idx = None
+        self.data_changed.emit()
         return True
 
     def loaded(self) -> bool:
         return self._loaded
 
     def is_dirty(self) -> bool:
-        return self.dirty
+        return self._dirty
+    
+    def is_editable(self):
+        return self._editable
+
+    def set_editable(self, value):
+        self._editable = value
+
+    def is_addable(self):
+        return self._addable
+    
+    def set_addable(self, value):
+        self._addable = value
+    
+    def selected_idx(self):
+        return self._selected_idx
+
+    def set_selected_idx(self, idx):
+        self._selected_idx = idx
+        self.selected_idx_changed.emit()
 
     def save(self):
         data = {
             "version": "0.1",
-            "image_path": self.image_path,
-            "lots": self.lots}
-        with open(self.json_path, 'w', encoding='utf-8') as file:
+            "image_path": self._image_path,
+            "lots": self._lots}
+        with open(self._json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
         self._loaded = True
-        self.dirty = False
+        self._dirty = False
 
     def may_save(self):
-        if not self.dirty:
+        if not self._dirty:
             return
         msg = 'The preset is unsaved, would you like to save it?'
         ret = QMB.warning(None, 'Attention', msg, QMB.StandardButton.Yes | QMB.StandardButton.No)
@@ -55,23 +87,29 @@ class LotsData:
         if ret == QMB.StandardButton.No:
             pass
     
-    def get_image_path(self):
-        return self.image_path
+    def image_path(self):
+        return self._image_path
     
     def set_image_path(self, path):
-        self.image_path = path
+        self._image_path = path
+    
+    def json_path(self):
+        return self._json_path
+    
+    def set_json_path(self, path):
+        self._json_path = path
 
-    def get_lots(self):
-        return self.lots
+    def lots(self):
+        return self._lots
 
-    def get_lot(self, lidx: int):
-        lots = self.get_lots()
+    def get_lot_by_idx(self, lidx: int):
+        lots = self.lots()
         if len(lots) <= lidx:
             return None
         return lots[lidx]
 
-    def get_points(self, lidx: int):
-        lot = self.get_lot(lidx)
+    def get_points_by_idx(self, lidx: int):
+        lot = self.get_lot_by_idx(lidx)
         if lot is None:
             return None
         quad = lot['quad']
@@ -80,16 +118,16 @@ class LotsData:
                 [quad[4], quad[5]],
                 [quad[6], quad[7]]]
 
-    def set_point(self, lidx: int, pidx: int, x: float, y: float):
-        lot = self.get_lot(lidx)
+    def set_point_by_idx(self, lidx: int, pidx: int, x: float, y: float):
+        lot = self.get_lot_by_idx(lidx)
         if lot is None:
             return
         lot['quad'][pidx * 2 + 0] = x
         lot['quad'][pidx * 2 + 1] = y
-        self.dirty = True
+        self._dirty = True
 
-    def move_lot(self, lidx: int, dx: float, dy: float):
-        lot = self.get_lot(lidx)
+    def move_lot_by_idx(self, lidx: int, dx: float, dy: float):
+        lot = self.get_lot_by_idx(lidx)
         if lot is None:
             return
         quad = lot['quad']
@@ -101,15 +139,19 @@ class LotsData:
         quad[5] += dy
         quad[6] += dx
         quad[7] += dy
-        self.dirty = True
+        self._dirty = True
 
-    def delete_area(self, lidx: int):
-        self.lots.pop(lidx)
+    def delete_selected_area(self):
+        if self._selected_idx is None:
+            return
+        self._lots.pop(self._selected_idx)
+        self._selected_idx = None
+        self.data_changed.emit()
 
     def nearest_point(self, x: float, y: float):
         dist, lidx, pidx = None, None, None
-        for lidx_tmp, lot in enumerate(self.get_lots()):
-            for pidx_tmp, point in enumerate(self.get_points(lidx_tmp)):
+        for lidx_tmp, lot in enumerate(self._lots):
+            for pidx_tmp, point in enumerate(self.get_points_by_idx(lidx_tmp)):
                 dist_tmp = ((point[0] - x)**2 + (point[1] - y)**2)**(1/2)
                 if (dist is None) or (dist_tmp < dist):
                     lidx = lidx_tmp
@@ -133,7 +175,7 @@ class LotsData:
             return (s >= 0) and (s + t <= A)
     
     def is_point_in_quad(self, x: float, y: float):
-        for lidx, lot in enumerate(self.get_lots()):
+        for lidx, lot in enumerate(self._lots):
             x1, y1, x2, y2, x3, y3, x4, y4 = lot['quad']
             if self.intersect(Vector2d(x, y), Triangle2d(x1, y1, x2, y2, x3, y3)) or \
                self.intersect(Vector2d(x, y), Triangle2d(x1, y1, x4, y4, x3, y3)):
@@ -147,7 +189,8 @@ class LotsData:
             x2: int, y2: int,
             x3: int, y3: int,
             x4: int, y4: int):
-        self.lots.append({
+        self._lots.append({
             'id': lot_id,
             'quad': [x1, y1, x2, y2, x3, y3, x4, y4]})
-        self.dirty = True
+        self._dirty = True
+        self.data_changed.emit()

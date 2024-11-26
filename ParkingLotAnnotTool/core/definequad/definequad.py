@@ -17,9 +17,6 @@ from .lotsdata import LotsData
 from .imgcrop import ImageCropWorker
 from .videoextract import VideoExtractWorker
 
-CANVASTOOL_NONE = 0
-CANVASTOOL_DRAW = 1
-
 epsilon = 16.0
 area_init_size = 100.0
 point_size = 8
@@ -37,9 +34,8 @@ class DefineQuadWidget(QWidget):
 
         self.editable = True
         self.lots_data = LotsData()
-        self.add_lot_dialog = AddLotDialog(self)
 
-        self.canvas = Canvas(self)
+        self.canvas = Canvas(self.lots_data)
         self.canvas_picture = CanvasPicture()
         self.canvas_picture.key_press_event_sig.connect(self.canvas.key_press_event)
         self.canvas_picture.mouse_double_click_sig.connect(self.canvas.mouse_double_click_event)
@@ -71,34 +67,14 @@ class DefineQuadWidget(QWidget):
         self.toolbar.addAction(self.view_zoom_fit_action)
         self.toolbar.addAction(self.view_zoom_1_action)
 
-        self.lot_list = LotList(self)
+        self.lot_list = LotList(self.lots_data)
         layout = QHBoxLayout(self)
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas_scroll)
         layout.addWidget(self.lot_list)
         self.setLayout(layout)
 
-        self.check_canvastool(CANVASTOOL_NONE)
-
-    def enable_add_preset(self) -> None:
-        self.editable = False
-        self.set_action.setEnabled(False)
-        self.save_action.setEnabled(False)
-        self.none_action.setEnabled(False)
-        self.draw_action.setEnabled(False)
-        self.extract_frames_action.setEnabled(False)
-        self.view_zoom_fit_action.setEnabled(False)
-        self.view_zoom_1_action.setEnabled(False)
-
-    def disable_add_preset(self) -> None:
-        self.editable = True
-        self.set_action.setEnabled(True)
-        self.save_action.setEnabled(True)
-        self.none_action.setEnabled(True)
-        self.draw_action.setEnabled(True)
-        self.extract_frames_action.setEnabled(True)
-        self.view_zoom_fit_action.setEnabled(True)
-        self.view_zoom_1_action.setEnabled(True)
+        self.click_none_impl()
 
     def changed_zoom(self):
         traceback_and_exit(self.changed_zoom_impl)
@@ -119,10 +95,9 @@ class DefineQuadWidget(QWidget):
             image_path = file_path[0]
             self.lots_data.set_image_path(image_path)
         elif file_path[1] == file_filter_json:
-            self.lots_data.json_path = file_path[0]
+            self.lots_data.set_json_path(file_path[0])
             self.lots_data.load()
-            image_path = self.lots_data.get_image_path()
-        self.lot_list.refresh()
+            image_path = self.lots_data.image_path()
         img = cv2.imread(image_path, cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.canvas_scroll.fit_window()
@@ -130,23 +105,31 @@ class DefineQuadWidget(QWidget):
     def click_save(self) -> None:
         traceback_and_exit(self.click_save_impl)
     def click_save_impl(self) -> None:
-        if self.lots_data.json_path is None:
+        if self.lots_data.json_path() is None:
             file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Json File (*.json)")
-            self.lots_data.json_path = file_path
-        if self.lots_data.is_dirty() and self.lots_data.loaded():
-            self.lots_data.may_save()
+            self.lots_data.set_json_path(file_path)
         else:
             self.lots_data.save()
+
+    def clear_canvastool(self) -> None:
+        self.none_action.setChecked(False)
+        self.draw_action.setChecked(False)
 
     def click_none(self) -> None:
         traceback_and_exit(self.click_none_impl)
     def click_none_impl(self) -> None:
-        self.check_canvastool(CANVASTOOL_NONE)
+        self.clear_canvastool()
+        self.none_action.setChecked(True)
+        self.lots_data.set_addable(False)
+        self.lots_data.set_editable(True)
 
     def click_draw(self) -> None:
         traceback_and_exit(self.click_draw_impl)
     def click_draw_impl(self) -> None:
-        self.check_canvastool(CANVASTOOL_DRAW)
+        self.clear_canvastool()
+        self.draw_action.setChecked(True)
+        self.lots_data.set_addable(True)
+        self.lots_data.set_editable(False)
 
     def video_extraction_start(self, video_path, outdir_path, interval):
         self.progress_dialog = QProgressDialog("Extracting frames...", "Cancel", 0, 100, self)
@@ -181,7 +164,7 @@ class DefineQuadWidget(QWidget):
                 self, "Info",
                 "Image is not loaded. Or it has never been saved.")
             return
-        lots = self.lots_data.get_lots()
+        lots = self.lots_data.lots()
         if lots == []:
             QMessageBox.information(
                 self, "Info",
@@ -202,10 +185,10 @@ class DefineQuadWidget(QWidget):
         data = {
             "version": "0.1",
             "video_path": str(video_path),
-            "lots": self.lots_data.get_lots(),
+            "lots": self.lots_data.lots(),
             "scenes": {}
         }
-        for lot in self.lots_data.get_lots():
+        for lot in self.lots_data.lots():
             data["scenes"][lot["id"]] = []
         self.scene_json_path = outdir_path / "scene.json"
         with open(self.scene_json_path, 'w', encoding='utf-8') as file:
@@ -224,36 +207,12 @@ class DefineQuadWidget(QWidget):
     def press_view_zoom_1_impl(self) -> None:
         self.canvas_scroll.set_zoom(100)
 
-    def clear_canvastool(self) -> None:
-        self.none_action.setChecked(False)
-        self.draw_action.setChecked(False)
-
-    def check_canvastool(self, tool) -> None:
-        self.clear_canvastool()
-        if   tool == CANVASTOOL_NONE:
-            self.none_action.setChecked(True)
-        elif tool == CANVASTOOL_DRAW:
-            self.draw_action.setChecked(True)
-        else:
-            raise RuntimeError(f'tool={tool}')
-
-    def get_canvastool(self) -> None:
-        if self.none_action.isChecked():
-            return CANVASTOOL_NONE
-        if self.draw_action.isChecked():
-            return CANVASTOOL_DRAW
-        raise RuntimeError('no tool is checked')
-
-    def refresh(self) -> None:
-        self.lot_list.refresh()
-
 
 class AddLotDialog(QDialog):
 
-    def __init__(self, parent: DefineQuadWidget):
+    def __init__(self, lots_data: LotsData, parent=None):
         super(AddLotDialog, self).__init__(parent)
-        self.p = parent
-
+        self.lots_data = lots_data
         self.setWindowTitle('Add Lot')
         self.setWindowFlags(
             self.windowFlags() &
@@ -281,13 +240,12 @@ class AddLotDialog(QDialog):
         try:
             if self.exec() == 0:
                 return
-            lots_data = self.p.lots_data
             lot_id = self.ledit_id.text()
             xmin = min(mouse_pressed_x, mouse_x)
             ymin = min(mouse_pressed_y, mouse_y)
             xmax = max(mouse_pressed_x, mouse_x)
             ymax = max(mouse_pressed_y, mouse_y)
-            lots_data.add_lot(
+            self.lots_data.add_lot(
                 lot_id,
                 int(xmin), int(ymin),
                 int(xmax), int(ymin),
@@ -297,14 +255,15 @@ class AddLotDialog(QDialog):
             # signals.print(f'Add Lot failed. {e}.')
             pass
 
+
 class Canvas:
 
-    def __init__(self, parent: DefineQuadWidget):
-        self.p = parent  # CanvasPane
-
+    def __init__(self, lots_data: LotsData, parent=None):
+        
+        self.lots_data = lots_data
+        self.add_lot_dialog = AddLotDialog(self.lots_data)
         self.highlighted_lidx = None
         self.highlighted_pidx = None
-        self.selected_lidx = None
         self.mouse_x = None
         self.mouse_y = None
         self.mouse_pressed = False
@@ -317,66 +276,46 @@ class Canvas:
         traceback_and_exit(self.key_press_event_impl, event=event)
     def key_press_event_impl(self, event: QKeyEvent):
         if event.key() == Qt.Key.Key_Escape:
-            self.selected_lidx = None
-            self.p.lot_list.set_selected_lidx(self.selected_lidx)
+            self.lots_data.set_selected_idx(None)
         elif event.key() == Qt.Key.Key_Delete:
-            lots_data = self.p.lots_data
-            if not lots_data.loaded():
-                return
-            if self.p.editable is False:
-                return
-            if self.selected_lidx is None:
-                return
-            lots_data.delete_area(self.selected_lidx)
-            self.selected_lidx = None
-            self.p.lot_list.set_selected_lidx(self.selected_lidx)
-            self.p.lot_list.refresh()
+            self.lots_data.delete_selected_area()
 
     def mouse_double_click_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
         traceback_and_exit(self.mouse_double_click_event_impl, event=event, pos=pos, scale=scale)
     def mouse_double_click_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
-        lots_data = self.p.lots_data
-        if not lots_data.loaded():
-            return
-        if self.p.editable is False:
-            return
+        pass
 
     def mouse_move_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
         traceback_and_exit(self.mouse_move_event_impl, event=event, pos=pos, scale=scale)
     def mouse_move_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
-        lots_data = self.p.lots_data
-        if self.p.editable is False:
-            return
-        canvastool = self.p.get_canvastool()
-
         mouse_x = pos.x()
         mouse_y = pos.y()
 
         if self.mouse_pressed_on_point:
-            points = lots_data.get_points(self.highlighted_lidx)
+            points = self.lots_data.get_points_by_idx(self.highlighted_lidx)
             points[self.highlighted_pidx] = [mouse_x, mouse_y]
             quad_is_convex = is_polygon_convex(
                 [points[0][0], points[1][0], points[2][0], points[3][0]],
                 [points[0][1], points[1][1], points[2][1], points[3][1]])
             if not quad_is_convex:
                 return
-            lots_data.set_point(
+            self.lots_data.set_point_by_idx(
                 self.highlighted_lidx,
                 self.highlighted_pidx,
                 mouse_x,
                 mouse_y)
-        elif (canvastool == CANVASTOOL_NONE) and \
+        elif (self.lots_data.is_editable()) and \
              (self.mouse_pressed_on_lot) and \
              (not self.mouse_pressed_on_point):
-            lots_data.move_lot(
+            self.lots_data.move_lot_by_idx(
                 self.highlighted_lidx,
                 mouse_x - self.mouse_x,
                 mouse_y - self.mouse_y)
         else:
             self.highlighted_lidx = None
             self.highlighted_pidx = None
-            lidx_in = lots_data.is_point_in_quad(pos.x(), pos.y())
-            dist, lidx, pidx = lots_data.nearest_point(pos.x(), pos.y())
+            lidx_in = self.lots_data.is_point_in_quad(pos.x(), pos.y())
+            dist, lidx, pidx = self.lots_data.nearest_point(pos.x(), pos.y())
             if dist is not None:
                 if dist < epsilon / scale:
                     self.highlighted_lidx = lidx
@@ -392,8 +331,6 @@ class Canvas:
     def mouse_press_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
         traceback_and_exit(self.mouse_press_event_impl, event=event, pos=pos, scale=scale)
     def mouse_press_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
-        if self.p.editable is False:
-            return
 
         if event.button() == Qt.MouseButton.LeftButton:
             self.mouse_pressed = True
@@ -407,27 +344,20 @@ class Canvas:
 
         if (event.button() == Qt.MouseButton.LeftButton) and \
            (self.mouse_pressed_on_lot):
-            self.selected_lidx = self.highlighted_lidx
-            self.p.lot_list.set_selected_lidx(self.selected_lidx)
+            self.lots_data.set_selected_idx(self.highlighted_lidx)
 
     def mouse_release_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
         traceback_and_exit(self.mouse_release_event_impl, event=event, pos=pos, scale=scale)
     def mouse_release_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
-        if self.p.editable is False:
-            return
-        canvastool = self.p.get_canvastool()
-
-        if (canvastool == CANVASTOOL_DRAW) and \
+        if (self.lots_data.is_addable()) and \
            (event.button() == Qt.MouseButton.LeftButton) and \
            (self.mouse_pressed_x is not None) and \
            (self.mouse_pressed_y is not None) and \
            (not self.mouse_pressed_on_lot) and \
            (not self.mouse_pressed_on_point):
-            self.p.add_lot_dialog.popup(
+            self.add_lot_dialog.popup(
                 self.mouse_pressed_x, self.mouse_pressed_y,
                 pos.x(), pos.y())
-            self.p.lot_list.refresh()
-            self.p.update()
 
         if event.button() == Qt.MouseButton.LeftButton:
             self.mouse_pressed = False
@@ -437,24 +367,19 @@ class Canvas:
     def paint_event(self, event: QPaintEvent, painter: QPainter, scale: float) -> None:
         traceback_and_exit(self.paint_event_impl, event=event, painter=painter, scale=scale)
     def paint_event_impl(self, event: QPaintEvent, painter: QPainter, scale: float) -> None:
-        lots_data = self.p.lots_data
-        if not self.p.editable:
-            return
-        canvastool = self.p.get_canvastool()
-
         scale = scale
         p = painter
 
-        lots = lots_data.get_lots()
+        lots = self.lots_data.lots()
 
         p.setPen(QPen(QColor(0, 0, 0, 0)))
         for lidx, lot in enumerate(lots):
             lot_fill_color = lot_default_fill_color
-            if   lidx == self.selected_lidx:
+            if   lidx == self.lots_data.selected_idx():
                 lot_fill_color = lot_selected_fill_color
             elif lidx == self.highlighted_lidx:
                 lot_fill_color = lot_highlighted_fill_color
-            points = lots_data.get_points(lidx)
+            points = self.lots_data.get_points_by_idx(lidx)
             poly = QPolygonF([
                 QPointF(points[0][0], points[0][1]),
                 QPointF(points[1][0], points[1][1]),
@@ -467,7 +392,7 @@ class Canvas:
         pen.setWidth(max(1, int(round(2.0 / scale))))
         p.setPen(pen)
         for lidx, _ in enumerate(lots):
-            points = lots_data.get_points(lidx)
+            points = self.lots_data.get_points_by_idx(lidx)
             for pidx, point in enumerate(points):
                 point_fill_color = point_default_fill_color
                 if (lidx == self.highlighted_lidx) and \
@@ -481,7 +406,7 @@ class Canvas:
                     point_size / scale)
                 p.fillPath(point_path, point_fill_color)
 
-        if (canvastool == CANVASTOOL_DRAW) and \
+        if (self.lots_data.is_addable()) and \
            (self.mouse_x is not None) and \
            (self.mouse_y is not None) and \
            (self.mouse_pressed) and \
@@ -502,102 +427,46 @@ class Canvas:
             p.setBrush(QBrush(lot_default_fill_color))
             p.drawPolygon(poly)
 
-    def get_selected_lidx(self):
-        return self.selected_lidx
 
-    def set_selected_lidx(self, selected_lidx):
-        self.selected_lidx = selected_lidx
-
-
-class DisableChangedSignal:
-
-    def __init__(self, custom_list):
-        self.l = custom_list
-        self.enable = custom_list.connect_changed_flag
+class SignalBlocker:
+    def __init__(self, widget):
+        self.widget = widget
 
     def __enter__(self):
-        if self.enable:
-            self.l.disconnect_changed()
+        self.widget.blockSignals(True)
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        if self.enable:
-            self.l.connect_changed()
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.widget.blockSignals(False)
 
 
 class LotList(QListWidget):
 
-    def __init__(self, parent: DefineQuadWidget):
+    def __init__(self, lots_data: LotsData, parent=None):
         super(LotList, self).__init__(parent)
-
-        self.p = parent
-
-        self.connect_changed_flag: bool = False
-        self.connect_changed()
-
+        self._lots_data = lots_data
+        self._selected_idx = None
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setMaximumWidth(200)
+        self.currentRowChanged.connect(self.on_current_row_changed)
+        self._lots_data.selected_idx_changed.connect(self.update)
+        self._lots_data.data_changed.connect(self.update)
     
-    def connect_changed(self):
-        qt_connect_signal_safely(
-            self.currentItemChanged, self.changed)
-        self.connect_changed_flag = True
-    
-    def disconnect_changed(self) -> None:
-        qt_disconnect_signal_safely(
-            self.currentItemChanged, self.changed)
-        self.connect_changed_flag = False
-
-    def get_selected_lidx(self):
-        idx = self.currentRow()
-        return idx if (0 <= idx) else None
-
-    def set_selected_lidx(self, idx):
-        with DisableChangedSignal(self):
-            if idx is None:
-                self.setCurrentRow(-1)
-                return
-            self.setCurrentRow(idx)
-
-    def refresh(self) -> None:
-        with DisableChangedSignal(self):
-
+    # Callback
+    def update(self) -> None:
+        with SignalBlocker(self):
             self.clear()
-            lots = self.p.lots_data.get_lots()
-            for _, lot in enumerate(lots):
+            for _, lot in enumerate(self._lots_data.lots()):
                 self.addItem(f"{lot['id']}")
-            select_idx = self.get_selected_lidx()
-            if (select_idx is not None) and \
-               (select_idx < self.count()):
-                self.setCurrentRow(select_idx)
-            else:
+            if self._lots_data.selected_idx() is None:
                 self.setCurrentRow(-1)
-
-            self.changed_impl()
-
-    def changed(self) -> None:
-        traceback_and_exit(self.changed_impl)
-    def changed_impl(self) -> None:
-        self.p.canvas.set_selected_lidx(self.get_selected_lidx())
-
-    def clear_list(self):
-        if self.count() == 0:
-            return
-        self.clear()
-        self.changed_impl()
+            else:
+                self.setCurrentRow(self._lots_data.selected_idx())
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Escape:
-            self.set_selected_lidx(None)
-            self.p.canvas.set_selected_lidx(None)
+            self._lots_data.set_selected_idx(None)
         elif event.key() == Qt.Key.Key_Delete:
-            lots_data = self.p.lots_data
-            if not lots_data.loaded():
-                return
-            if self.p.editable is False:
-                return
-            if self.get_selected_lidx() is None:
-                return
-            lots_data.delete_area(self.get_selected_lidx())
-            self.set_selected_lidx(None)
-            self.p.canvas.set_selected_lidx(None)
-            self.refresh()
+            self._lots_data.delete_selected_area()
+    
+    def on_current_row_changed(self):
+        self._lots_data.set_selected_idx(self.currentRow())

@@ -15,7 +15,7 @@ class SeekBarWidget(QWidget):
         self.slider.setValue(0)
         self.slider.valueChanged.connect(self.emit_value_changed)
 
-        self.scenes = {'busy': set([]), 'free': set([])}
+        self.conditions = {'sunny': set([]), 'rainy': set([])}
 
         self.prev_button = QPushButton("◀")
         self.next_button = QPushButton("▶")
@@ -60,8 +60,8 @@ class SeekBarWidget(QWidget):
         value = self.slider.value()
         self.slider.setValue(max(value + self.increment, self.slider.minimum()))
 
-    def reset_scenes(self):
-        self.scenes = {'busy': set([]), 'free': set([])}
+    def reset_conditions(self):
+        self.conditions = {'sunny': set([]), 'rainy': set([])}
         self.repaint()
 
     def emit_value_changed(self, value):
@@ -79,17 +79,17 @@ class SeekBarWidget(QWidget):
     def set_value(self, value):
         self.slider.setValue(value)
 
-    def add_busy_scene(self):
-        self.scenes['busy'].add(self.slider.value())
+    def add_sunny_condition(self):
+        self.conditions['sunny'].add(self.slider.value())
 
-    def add_free_scene(self):
-        self.scenes['free'].add(self.slider.value())
+    def add_rainy_condition(self):
+        self.conditions['rainy'].add(self.slider.value())
 
-    def remove_busy_scene(self, value):
-        self.scenes['busy'].remove(value)
+    def remove_sunny_condition(self, value):
+        self.conditions['sunny'].remove(value)
 
-    def remove_free_scene(self, value):
-        self.scenes['free'].remove(value)
+    def remove_rainy_condition(self, value):
+        self.conditions['rainy'].remove(value)
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -98,15 +98,15 @@ class SeekBarWidget(QWidget):
         slider_rect = self.slider.geometry()
         slider_min = self.slider.minimum()
         slider_max = self.slider.maximum()
-        pen_free = QPen(QColor("green"), 2)
-        pen_busy = QPen(QColor("red"), 2)
+        pen_rainy = QPen(QColor("blue"), 2)
+        pen_sunny = QPen(QColor("red"), 2)
 
-        for key, scenes_set in self.scenes.items():
-            if key == 'free':
-                painter.setPen(pen_free)
-            if key == 'busy':
-                painter.setPen(pen_busy)
-            for scene in scenes_set:
-                marker = slider_rect.left() + slider_rect.width() * (scene - slider_min) / (slider_max - slider_min)
+        for key, conditions_set in self.conditions.items():
+            if key == 'rainy':
+                painter.setPen(pen_rainy)
+            if key == 'sunny':
+                painter.setPen(pen_sunny)
+            for condition in conditions_set:
+                marker = slider_rect.left() + slider_rect.width() * (condition - slider_min) / (slider_max - slider_min)
                 marker = int(marker)
                 painter.drawLine(marker, slider_rect.top(), marker, slider_rect.bottom())

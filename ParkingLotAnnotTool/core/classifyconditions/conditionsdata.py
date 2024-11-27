@@ -1,12 +1,11 @@
 import json
 from pathlib import Path
-from typing import Optional
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QMessageBox as QMB
 
 
-class SceneData(QObject):
+class ConditionsData(QObject):
 
     current_frame_changed = pyqtSignal()
     current_lot_id_changed = pyqtSignal()
@@ -15,13 +14,13 @@ class SceneData(QObject):
         super().__init__()
         self._json_path = None
         self._video_path: str = None
-        self._lots: Optional[list] = []
-        self._scenes = {}
+        self._conditions = []
+        self._initial_time = None
         self._dirty: bool = False
         self._loaded: bool = False
 
         self._current_frame = "00000"
-        self._current_lot_id: str = None
+        self._current_time = None
 
     def reset(self):
         pass
@@ -31,12 +30,12 @@ class SceneData(QObject):
         with open(self._json_path, 'r', encoding='utf-8') as file:
             data = json.load(file)
         self._video_path = data['video_path']
-        self._lots = data['lots']
-        self._scenes = data['scenes']
+        self._conditions = data['conditions']
+        self._initial_time = data['initial_time']
+        self._interval = data['interval']
         self._dirty = False
         self._loaded = True
 
-        self._current_lot_id = self.lot_ids()[0]
         self._current_frame = "00000"
         self.current_frame_changed.emit()
         return True
@@ -48,59 +47,15 @@ class SceneData(QObject):
         self._current_frame = value
         self.current_frame_changed.emit()
 
-    def current_lot_id(self):
-        return self._current_lot_id
-
-    def update_current_lot_id(self, value):
-        self._current_lot_id = value
-        self.current_lot_id_changed.emit()
-
-    def scenes_with_current_lot_id(self):
-        if self._current_lot_id is None:
-            return None
-        return self._scenes[self._current_lot_id]
-
     def get_label_find_by_frame(self, frame):
-        scenes = self.scenes_with_current_lot_id()
-        if frame is None or not scenes:
+        if frame is None or not self._conditions:
             return None
-        for d in scenes:
+        for d in self._conditions:
             if d["frame"] == frame:
                 return d["label"]
-        return self.prev_scene_label()
 
     def current_label(self):
         return self.get_label_find_by_frame(self._current_frame)
-
-    def get_frames_adjacent_scenes(self, frame):
-        scenes = self.scenes_with_current_lot_id()
-        if not scenes:
-            return None, None
-        frames = [d["frame"] for d in scenes]
-        sorted_values = sorted(frames)
-
-        for i in range(len(sorted_values) - 1):
-            if sorted_values[i] <= frame < sorted_values[i + 1]:
-                return sorted_values[i], sorted_values[i + 1]
-
-        if frame < sorted_values[0]:
-            return None, sorted_values[0]
-        elif frame >= sorted_values[-1]:
-            return sorted_values[-1], None
-
-    def next_scene_frame(self):
-        prev, next = self.get_frames_adjacent_scenes(self._current_frame)
-        return next
-
-    def prev_scene_frame(self):
-        prev, next = self.get_frames_adjacent_scenes(self._current_frame)
-        return prev
-
-    def next_scene_label(self):
-        return self.get_label_find_by_frame(self.next_scene_frame())
-
-    def prev_scene_label(self):
-        return self.get_label_find_by_frame(self.prev_scene_frame())
 
     def info(self):
         return {
@@ -113,29 +68,16 @@ class SceneData(QObject):
     def raw_data_dir(self) -> Path:
         return self.parent_dir() / "raw"
 
-    def lot_dirs(self) -> Path:
-        return [self.parent_dir() / lot['id'] for lot in self._lots]
-
-    def lot_ids(self):
-        return [lot['id'] for lot in self._lots]
-
     def len_frames(self):
         return len(list(self.raw_data_dir().glob("*.jpg")))
 
     def frame_names(self):
         return [f'{i:05d}.jpg' for i in range(self.len_frames())]
 
-    def lots(self):
-        return self._lots
-
-    def scenes(self):
-        return self._scenes
-
-    def add_scene(self, key, scene):
-        self._scenes[key].append(scene)
-
-    def remove_scene(self, key, scene):
-        self._scenes[key].remove(scene)
+    def add_label(self, label):
+        self._conditions.append({
+            "frame": self.current_frame(),
+            "label": label})
 
     def loaded(self) -> bool:
         return self._loaded
@@ -147,8 +89,9 @@ class SceneData(QObject):
         data = {
             "version": "0.1",
             "video_path": str(self._video_path),
-            "lots": self._lots,
-            "scenes": self._scenes}
+            "conditions": self._conditions,
+            "initial_time": self._initial_time,
+            "interval": self._interval}
         with open(self._json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
         self._loaded = True
@@ -171,11 +114,11 @@ class SceneData(QObject):
             self._json_path = Path(path)
 
 
-class SceneDataInfoWidget(QWidget):
-    def __init__(self, scene_data: SceneData, parent=None):
-        super(SceneDataInfoWidget, self).__init__()
-        self.scene_data = scene_data
-        layout, self.line_edits = self.dict_to_layout(self.scene_data.info())
+class ConditionsDataInfoWidget(QWidget):
+    def __init__(self, conditions_data: ConditionsData, parent=None):
+        super(ConditionsDataInfoWidget, self).__init__()
+        self.conditions_data = conditions_data
+        layout, self.line_edits = self.dict_to_layout(self.conditions_data.info())
         self.setLayout(layout)
 
     def dict_to_layout(self, data):
@@ -200,7 +143,7 @@ class SceneDataInfoWidget(QWidget):
         return layout, line_edits
 
     def update(self):
-        for key, value in self.scene_data.info().items():
+        for key, value in self.conditions_data.info().items():
             self.line_edits[key].setEnabled(True)
             if value is None:
                 self.line_edits[key].setText("None")

@@ -47,7 +47,7 @@ class LotsData(QObject):
 
     def is_dirty(self) -> bool:
         return self._dirty
-    
+
     def is_editable(self):
         return self._editable
 
@@ -56,10 +56,10 @@ class LotsData(QObject):
 
     def is_addable(self):
         return self._addable
-    
+
     def set_addable(self, value):
         self._addable = value
-    
+
     def selected_idx(self):
         return self._selected_idx
 
@@ -86,16 +86,16 @@ class LotsData(QObject):
             self.save()
         if ret == QMB.StandardButton.No:
             pass
-    
+
     def image_path(self):
         return self._image_path
-    
+
     def set_image_path(self, path):
         self._image_path = path
-    
+
     def json_path(self):
         return self._json_path
-    
+
     def set_json_path(self, path):
         self._json_path = path
 
@@ -173,7 +173,7 @@ class LotsData(QObject):
             return (s <= 0) and (s + t >= A)
         else:
             return (s >= 0) and (s + t <= A)
-    
+
     def is_point_in_quad(self, x: float, y: float):
         for lidx, lot in enumerate(self._lots):
             x1, y1, x2, y2, x3, y3, x4, y4 = lot['quad']

@@ -106,7 +106,7 @@ class CanvasPicture(QWidget):
     def paintEvent_impl(self, event: QPaintEvent) -> None:
         if self.pixmap is None:
             return super(CanvasPicture, self).paintEvent(event)
-        
+
         p = self.painter
 
         p.begin(self)

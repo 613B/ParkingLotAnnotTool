@@ -18,7 +18,7 @@ class VideoExtractWorker(QThread):
     def run(self):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
-        
+
         cap = cv2.VideoCapture(self.video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
         frame_interval = int(fps * self.interval)

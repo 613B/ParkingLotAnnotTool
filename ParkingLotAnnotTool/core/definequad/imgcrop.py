@@ -35,7 +35,7 @@ class ImageCropWorker(QThread):
             if self._is_canceled:
                 self.canceled.emit()
                 return
-            
+
             image = Image.open(raw_frame_path)
             for lot in lots:
                 q = lot['quad']
@@ -45,7 +45,7 @@ class ImageCropWorker(QThread):
 
             progress = int((i / total_frames) * 100)
             self.progress.emit(progress)
-        
+
         self.finished.emit()
 
     def cancel(self):
@@ -63,6 +63,7 @@ class ImageCropWorker(QThread):
     def get_ymax(self, contours: List[Tuple[int, int]]):
         return max(contours, key=lambda item: item[1])[1]
 
+    # TODO implement new method
     def imgcrop(self, image: Image, contours: List[Tuple[int, int]]) -> Image:
         xmin = self.get_xmin(contours)
         xmax = self.get_xmax(contours)

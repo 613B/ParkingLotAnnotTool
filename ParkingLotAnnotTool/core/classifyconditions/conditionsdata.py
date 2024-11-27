@@ -16,6 +16,9 @@ class ConditionsData(QObject):
         self._video_path: str = None
         self._conditions = []
         self._initial_time = None
+        self._day_start_time = None
+        self._night_start_time = None
+        self._interval = None
         self._dirty: bool = False
         self._loaded: bool = False
 
@@ -32,6 +35,8 @@ class ConditionsData(QObject):
         self._video_path = data['video_path']
         self._conditions = data['conditions']
         self._initial_time = data['initial_time']
+        self._day_start_time = data['day_start_time']
+        self._night_start_time = data['night_start_time']
         self._interval = data['interval']
         self._dirty = False
         self._loaded = True
@@ -91,6 +96,8 @@ class ConditionsData(QObject):
             "video_path": str(self._video_path),
             "conditions": self._conditions,
             "initial_time": self._initial_time,
+            "day_start_time": self._day_start_time,
+            "night_start_time": self._night_start_time,
             "interval": self._interval}
         with open(self._json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
@@ -112,6 +119,27 @@ class ConditionsData(QObject):
             self._json_path = path
         elif isinstance(path, str):
             self._json_path = Path(path)
+
+    def conditions(self):
+        return self._conditions
+
+    def initial_time(self):
+        return self._initial_time
+
+    def set_initial_time(self, value):
+        self._initial_time = value
+
+    def day_start_time(self):
+        return self._day_start_time
+
+    def set_day_start_time(self, value):
+        self._day_start_time = value
+
+    def night_start_time(self):
+        return self._night_start_time
+
+    def set_night_start_time(self, value):
+        self._night_start_time = value
 
 
 class ConditionsDataInfoWidget(QWidget):

@@ -79,16 +79,16 @@ class SeekBarWidget(QWidget):
     def set_value(self, value):
         self.slider.setValue(value)
     
-    def add_sunny_scene(self):
+    def add_sunny_conditions(self):
         self.conditions['sunny'].add(self.slider.value())
 
-    def add_rainy_scene(self):
+    def add_rainy_condition(self):
         self.conditions['rainy'].add(self.slider.value())
     
-    def remove_sunny_scene(self, value):
+    def remove_sunny_condition(self, value):
         self.conditions['sunny'].remove(value)
 
-    def remove_rainy_scene(self, value):
+    def remove_rainy_condition(self, value):
         self.conditions['rainy'].remove(value)
     
     def paintEvent(self, event):
@@ -106,7 +106,7 @@ class SeekBarWidget(QWidget):
                 painter.setPen(pen_rainy)
             if key == 'sunny':
                 painter.setPen(pen_sunny)
-            for scene in conditions_set:
-                marker = slider_rect.left() + slider_rect.width() * (scene - slider_min) / (slider_max - slider_min)
+            for condition in conditions_set:
+                marker = slider_rect.left() + slider_rect.width() * (condition - slider_min) / (slider_max - slider_min)
                 marker = int(marker)
                 painter.drawLine(marker, slider_rect.top(), marker, slider_rect.bottom())

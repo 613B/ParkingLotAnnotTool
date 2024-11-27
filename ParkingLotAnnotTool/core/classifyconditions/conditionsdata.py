@@ -39,14 +39,14 @@ class ConditionsData(QObject):
         self._current_frame = "00000"
         self.current_frame_changed.emit()
         return True
-    
+
     def current_frame(self):
         return self._current_frame
-    
+
     def update_current_frame(self, value):
         self._current_frame = value
         self.current_frame_changed.emit()
-    
+
     def get_label_find_by_frame(self, frame):
         if frame is None or not self._conditions:
             return None
@@ -64,13 +64,13 @@ class ConditionsData(QObject):
 
     def parent_dir(self) -> Path:
         return self._json_path.parent
-    
+
     def raw_data_dir(self) -> Path:
         return self.parent_dir() / "raw"
-    
+
     def len_frames(self):
         return len(list(self.raw_data_dir().glob("*.jpg")))
-    
+
     def frame_names(self):
         return [f'{i:05d}.jpg' for i in range(self.len_frames())]
 
@@ -106,7 +106,7 @@ class ConditionsData(QObject):
             self.save()
         if ret == QMB.StandardButton.No:
             pass
-    
+
     def set_json_path(self, path):
         if   isinstance(path, Path):
             self._json_path = path

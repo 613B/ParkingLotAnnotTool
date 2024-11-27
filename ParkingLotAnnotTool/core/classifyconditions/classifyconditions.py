@@ -131,7 +131,7 @@ class ClassifyConditionsWidget(QWidget):
                 conditions={"label": "rainy", "frame": frame})
         if self.conditions_list.count() == 0:
             self.sunny_action.setEnabled(True)
-            self.rainy_action.setEnabled(True) 
+            self.rainy_action.setEnabled(True)
 
     def press_view_zoom_fit(self) -> None:
         traceback_and_exit(self.press_view_zoom_fit_impl)

@@ -54,43 +54,43 @@ class SeekBarWidget(QWidget):
         if not self.long_press_detected:
             value = self.slider.value()
             self.slider.setValue(max(value + self.increment, self.slider.minimum()))
-    
+
     def update_index(self):
         self.long_press_detected = True
         value = self.slider.value()
         self.slider.setValue(max(value + self.increment, self.slider.minimum()))
-    
+
     def reset_scenes(self):
         self.scenes = {'busy': set([]), 'free': set([])}
         self.repaint()
 
     def emit_value_changed(self, value):
         self.valueChanged.emit(value)
-    
+
     def set_maxvalue(self, value):
         self.slider.setMaximum(value)
-    
+
     def get_value(self):
         return self.slider.value()
-    
+
     def get_value_str(self):
         return f"{self.slider.value():05d}"
-    
+
     def set_value(self, value):
         self.slider.setValue(value)
-    
+
     def add_busy_scene(self):
         self.scenes['busy'].add(self.slider.value())
 
     def add_free_scene(self):
         self.scenes['free'].add(self.slider.value())
-    
+
     def remove_busy_scene(self, value):
         self.scenes['busy'].remove(value)
 
     def remove_free_scene(self, value):
         self.scenes['free'].remove(value)
-    
+
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)

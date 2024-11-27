@@ -40,26 +40,26 @@ class SceneData(QObject):
         self._current_frame = "00000"
         self.current_frame_changed.emit()
         return True
-    
+
     def current_frame(self):
         return self._current_frame
-    
+
     def update_current_frame(self, value):
         self._current_frame = value
         self.current_frame_changed.emit()
-    
+
     def current_lot_id(self):
         return self._current_lot_id
 
     def update_current_lot_id(self, value):
         self._current_lot_id = value
         self.current_lot_id_changed.emit()
-    
+
     def scenes_with_current_lot_id(self):
         if self._current_lot_id is None:
             return None
         return self._scenes[self._current_lot_id]
-    
+
     def get_label_find_by_frame(self, frame):
         scenes = self.scenes_with_current_lot_id()
         if frame is None or not scenes:
@@ -78,11 +78,11 @@ class SceneData(QObject):
             return None, None
         frames = [d["frame"] for d in scenes]
         sorted_values = sorted(frames)
-        
+
         for i in range(len(sorted_values) - 1):
             if sorted_values[i] <= frame < sorted_values[i + 1]:
                 return sorted_values[i], sorted_values[i + 1]
-        
+
         if frame < sorted_values[0]:
             return None, sorted_values[0]
         elif frame >= sorted_values[-1]:
@@ -95,13 +95,13 @@ class SceneData(QObject):
     def prev_scene_frame(self):
         prev, next = self.get_frames_adjacent_scenes(self._current_frame)
         return prev
-    
+
     def next_scene_label(self):
         return self.get_label_find_by_frame(self.next_scene_frame())
 
     def prev_scene_label(self):
         return self.get_label_find_by_frame(self.prev_scene_frame())
-    
+
     def info(self):
         return {
             "frame": self.current_frame(),
@@ -109,28 +109,28 @@ class SceneData(QObject):
 
     def parent_dir(self) -> Path:
         return self._json_path.parent
-    
+
     def raw_data_dir(self) -> Path:
         return self.parent_dir() / "raw"
-    
+
     def lot_dirs(self) -> Path:
         return [self.parent_dir() / lot['id'] for lot in self._lots]
-    
+
     def lot_ids(self):
         return [lot['id'] for lot in self._lots]
 
     def len_frames(self):
         return len(list(self.raw_data_dir().glob("*.jpg")))
-    
+
     def frame_names(self):
         return [f'{i:05d}.jpg' for i in range(self.len_frames())]
 
     def lots(self):
         return self._lots
-    
+
     def scenes(self):
         return self._scenes
-    
+
     def add_scene(self, key, scene):
         self._scenes[key].append(scene)
 
@@ -163,7 +163,7 @@ class SceneData(QObject):
             self.save()
         if ret == QMB.StandardButton.No:
             pass
-    
+
     def set_json_path(self, path):
         if   isinstance(path, Path):
             self._json_path = path

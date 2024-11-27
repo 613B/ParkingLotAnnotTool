@@ -11,4 +11,4 @@ class CoreWidget(QTabWidget):
         self.addTab(DefineQuadWidget(), 'Define Quad')
         self.addTab(ClassifyConditionsWidget(), 'Classify Conditions')
         self.addTab(ClassifySceneWidget(), 'Classify Scene')
-        self.setMinimumSize(200, 200)  # 必要に応じてサイズを設定
+        self.setMinimumSize(200, 200)

@@ -141,7 +141,7 @@ class ClassifySceneWidget(QWidget):
                 scene={"label": "free", "frame": frame})
         if self.scene_list.count() == 0:
             self.busy_action.setEnabled(True)
-            self.free_action.setEnabled(True) 
+            self.free_action.setEnabled(True)
 
     def press_view_zoom_fit(self) -> None:
         traceback_and_exit(self.press_view_zoom_fit_impl)
@@ -160,7 +160,7 @@ class ClassifySceneWidget(QWidget):
         img = cv2.imread(self.scene_data.parent_dir() / selected_items[0].text() / self.scene_data.frame_names()[value], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.scene_data.update_current_frame(self.seekbar.get_value_str())
-    
+
     def on_lotlist_itemselection_changed(self):
         selected_items = self.lot_list.selectedItems()
         frame_idx = self.seekbar.get_value()

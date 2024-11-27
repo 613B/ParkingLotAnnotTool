@@ -32,6 +32,7 @@ class ConditionsData(QObject):
         self._video_path = data['video_path']
         self._conditions = data['conditions']
         self._initial_time = data['initial_time']
+        self._interval = data['interval']
         self._dirty = False
         self._loaded = True
 
@@ -89,7 +90,8 @@ class ConditionsData(QObject):
             "version": "0.1",
             "video_path": str(self._video_path),
             "conditions": self._conditions,
-            "initial_time": self._initial_time}
+            "initial_time": self._initial_time,
+            "interval": self._interval}
         with open(self._json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
         self._loaded = True

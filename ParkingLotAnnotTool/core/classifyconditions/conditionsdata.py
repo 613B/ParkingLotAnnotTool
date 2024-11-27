@@ -8,7 +8,6 @@ from PyQt6.QtWidgets import QMessageBox as QMB
 class ConditionsData(QObject):
 
     current_frame_changed = pyqtSignal()
-    current_lot_id_changed = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -58,9 +57,39 @@ class ConditionsData(QObject):
         for d in self._conditions:
             if d["frame"] == frame:
                 return d["label"]
+        return self.prev_label()
+
+    def get_frames_adjacent_label(self, frame):
+        if not self._conditions:
+            return None, None
+        frames = [d["frame"] for d in self._conditions]
+        sorted_values = sorted(frames)
+
+        for i in range(len(sorted_values) - 1):
+            if sorted_values[i] <= frame < sorted_values[i + 1]:
+                return sorted_values[i], sorted_values[i + 1]
+
+        if frame < sorted_values[0]:
+            return None, sorted_values[0]
+        elif frame >= sorted_values[-1]:
+            return sorted_values[-1], None
+
+    def next_label_frame(self):
+        prev, next = self.get_frames_adjacent_label(self._current_frame)
+        return next
+
+    def prev_label_frame(self):
+        prev, next = self.get_frames_adjacent_label(self._current_frame)
+        return prev
 
     def current_label(self):
         return self.get_label_find_by_frame(self._current_frame)
+
+    def next_label(self):
+        return self.get_label_find_by_frame(self.next_label_frame())
+
+    def prev_label(self):
+        return self.get_label_find_by_frame(self.prev_label_frame())
 
     def info(self):
         return {

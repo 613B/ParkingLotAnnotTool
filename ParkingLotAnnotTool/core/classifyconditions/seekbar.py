@@ -79,7 +79,7 @@ class SeekBarWidget(QWidget):
     def set_value(self, value):
         self.slider.setValue(value)
     
-    def add_sunny_conditions(self):
+    def add_sunny_condition(self):
         self.conditions['sunny'].add(self.slider.value())
 
     def add_rainy_condition(self):

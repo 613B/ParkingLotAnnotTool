@@ -91,7 +91,7 @@ class ClassifyConditionsWidget(QWidget):
             return
         self.sunny_action.setEnabled(True)
         self.rainy_action.setEnabled(False)
-        self.seekbar.add_rainy_conditions()
+        self.seekbar.add_rainy_condition()
         self.conditions_list.addItem(f'rainy, {self.seekbar.get_value_str()}')
         self.conditions_data.add_label("rainy")
 
@@ -102,7 +102,7 @@ class ClassifyConditionsWidget(QWidget):
             return
         self.sunny_action.setEnabled(False)
         self.rainy_action.setEnabled(True)
-        self.seekbar.add_sunny_conditions()
+        self.seekbar.add_sunny_condition()
         self.conditions_list.addItem(f'sunny, {self.seekbar.get_value_str()}')
         self.conditions_data.add_label("sunny")
 

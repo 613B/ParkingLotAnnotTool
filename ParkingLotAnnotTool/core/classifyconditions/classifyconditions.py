@@ -17,10 +17,10 @@ class ClassifyConditionsWidget(QWidget):
     def __init__(self):
         super(ClassifyConditionsWidget, self).__init__()
 
-        self.editable = True
         self.conditions_data = ConditionsData()
         self.conditions_data_info = ConditionsDataInfoWidget(self.conditions_data)
         self.conditions_data.current_frame_changed.connect(self.conditions_data_info.update)
+        self.setting_dialog = SettingsDialog(self.conditions_data)
 
         self.canvas_picture = CanvasPicture()
         self.canvas_scroll = CanvasScroll(self, self.canvas_picture)
@@ -35,6 +35,7 @@ class ClassifyConditionsWidget(QWidget):
         self.undo_action = new_action(self, 'Undo', icon_text='Undo', slot=self.click_undo)
         self.view_zoom_fit_action = new_action(self, 'Zoom Fit', icon=read_icon('zoom_fit.png'), slot=self.press_view_zoom_fit)
         self.view_zoom_1_action = new_action(self, 'Zoom 100%', icon=read_icon('zoom_1.png'), slot=self.press_view_zoom_1)
+        self.settings_action = new_action(self, 'Settings', icon=read_icon('gear.png'), slot=self.click_settings)
         self.toolbar = QToolBar()
         self.toolbar.setOrientation(Qt.Orientation.Vertical)
         self.toolbar.addAction(self.open_action)
@@ -48,6 +49,8 @@ class ClassifyConditionsWidget(QWidget):
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.view_zoom_fit_action)
         self.toolbar.addAction(self.view_zoom_1_action)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(self.settings_action)
 
         self.conditions_list = QListWidget(self)
         self.conditions_list.itemSelectionChanged.connect(self.on_conditionslist_itemselection_changed)
@@ -143,6 +146,11 @@ class ClassifyConditionsWidget(QWidget):
     def press_view_zoom_1_impl(self) -> None:
         self.canvas_scroll.set_zoom(100)
 
+    def click_settings(self) -> None:
+        traceback_and_exit(self.click_settings_impl)
+    def click_settings_impl(self) -> None:
+        self.setting_dialog.popup()
+
     def on_seekbar_value_changed(self, value):
         img = cv2.imread(self.conditions_data.raw_data_dir() / self.conditions_data.frame_names()[value], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
@@ -164,3 +172,50 @@ class ClassifyConditionsWidget(QWidget):
         elif label == "rainy":
             self.sunny_action.setEnabled(True)
             self.rainy_action.setEnabled(False)
+
+
+class SettingsDialog(QDialog):
+
+    def __init__(self, conditions_data: ConditionsData, parent=None):
+        super(SettingsDialog, self).__init__(parent)
+        self.conditions_data = conditions_data
+        self.setWindowTitle('Setting')
+        self.setWindowFlags(
+            self.windowFlags() &
+            ~Qt.WindowType.WindowContextHelpButtonHint)
+
+        self.label_initial_time = QLabel('Initial Time [hh:mm:ss]')
+        self.ledit_initial_time = QLineEdit()
+        self.ledit_initial_time.setText(self.conditions_data.initial_time())
+
+        self.label_day_start_time = QLabel('Day Start Time [hh:mm:ss]')
+        self.ledit_day_start_time = QLineEdit()
+        self.ledit_day_start_time.setText(self.conditions_data.day_start_time())
+
+        self.label_night_start_time = QLabel('Night Start Time [hh:mm:ss]')
+        self.ledit_night_start_time = QLineEdit()
+        self.ledit_night_start_time.setText(self.conditions_data.night_start_time())
+
+        self.bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok, self)
+        self.bb.accepted.connect(self.accept)
+
+        layout = QVBoxLayout()
+        gl = QGridLayout()
+        gl.addWidget(self.label_initial_time, 0, 0)
+        gl.addWidget(self.ledit_initial_time, 0, 1)
+        gl.addWidget(self.label_day_start_time, 1, 0)
+        gl.addWidget(self.ledit_day_start_time, 1, 1)
+        gl.addWidget(self.label_night_start_time, 2, 0)
+        gl.addWidget(self.ledit_night_start_time, 2, 1)
+        layout.addLayout(gl)
+        layout.addWidget(self.bb)
+        self.setLayout(layout)
+
+    def popup(self):
+        if self.exec() == 0:
+            return
+        if not self.conditions_data.loaded():
+            return
+        self.conditions_data.set_initial_time(self.ledit_initial_time.text())
+        self.conditions_data.set_day_start_time(self.ledit_day_start_time.text())
+        self.conditions_data.set_night_start_time(self.ledit_night_start_time.text())

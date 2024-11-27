@@ -199,8 +199,10 @@ class DefineQuadWidget(QWidget):
             "version": "0.1",
             "video_path": str(video_path),
             "conditions": [],
+            "initial_time": None,
+            "day_start_time": None,
+            "night_start_time": None,
             "interval": str(interval),
-            "initial_time": None
         }
         with open(conditions_json_path, 'w', encoding='utf-8') as file:
             json.dump(conditions_data, file, ensure_ascii=False, indent=4)

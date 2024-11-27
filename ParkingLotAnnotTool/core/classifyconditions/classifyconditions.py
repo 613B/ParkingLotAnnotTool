@@ -144,7 +144,6 @@ class ClassifyConditionsWidget(QWidget):
         self.canvas_scroll.set_zoom(100)
 
     def on_seekbar_value_changed(self, value):
-        print(self.conditions_data.raw_data_dir() / self.conditions_data.frame_names()[value])
         img = cv2.imread(self.conditions_data.raw_data_dir() / self.conditions_data.frame_names()[value], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.conditions_data.update_current_frame(self.seekbar.get_value_str())

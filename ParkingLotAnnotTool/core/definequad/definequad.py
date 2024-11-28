@@ -460,7 +460,6 @@ class LotList(QListWidget):
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setMaximumWidth(200)
         self.currentRowChanged.connect(self.on_current_row_changed)
-        self._lots_data.selected_idx_changed.connect(self.update)
         self._lots_data.data_changed.connect(self.update)
 
     # Callback

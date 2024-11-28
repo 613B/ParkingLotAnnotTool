@@ -13,3 +13,17 @@ py -3.11 -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+## Install pyinstaller & Make executable
+
+```text
+cd third_party
+git clone https://github.com/pyinstaller/pyinstaller.git
+cd .\pyinstaller\bootloader
+python ./waf distclean all
+cd ..
+pip install .
+cd ..\..
+
+pyinstaller ParkingLotAnnotTool.spec
+```

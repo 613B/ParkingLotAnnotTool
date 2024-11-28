@@ -31,9 +31,8 @@ class ClassifySceneWidget(QWidget):
 
         self.open_action = new_action(self, 'Open', icon=read_icon('open_file.png'), slot=self.click_open)
         self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
-        # TODO setshortcut
-        self.busy_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_busy)
-        self.free_action = new_action(self, 'Free', icon_text='Free', slot=self.click_free)
+        self.free_action = new_action(self, 'Free', icon_text='Free', slot=self.click_free, shortcut=QKeySequence("1"))
+        self.busy_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_busy, shortcut=QKeySequence("2"))
         self.view_zoom_fit_action = new_action(self, 'Zoom Fit', icon=read_icon('zoom_fit.png'), slot=self.press_view_zoom_fit)
         self.view_zoom_1_action = new_action(self, 'Zoom 100%', icon=read_icon('zoom_1.png'), slot=self.press_view_zoom_1)
         self.toolbar = QToolBar()

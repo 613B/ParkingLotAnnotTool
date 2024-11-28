@@ -1,3 +1,4 @@
+import cv2
 import json
 from pathlib import Path
 from typing import Optional
@@ -9,7 +10,10 @@ from PyQt6.QtWidgets import QMessageBox as QMB
 class SceneData(QObject):
 
     current_frame_changed = pyqtSignal()
-    current_lot_id_changed = pyqtSignal()
+    selected_lot_idx_changed = pyqtSignal()
+    selected_scene_idx_changed = pyqtSignal()
+    data_loaded = pyqtSignal()
+    data_changed = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -21,7 +25,8 @@ class SceneData(QObject):
         self._loaded: bool = False
 
         self._current_frame = "00000"
-        self._current_lot_id: str = None
+        self._selected_lot_idx = None
+        self._selected_scene_idx = None
 
     def reset(self):
         pass
@@ -36,9 +41,10 @@ class SceneData(QObject):
         self._dirty = False
         self._loaded = True
 
-        self._current_lot_id = self.lot_ids()[0]
-        self._current_frame = "00000"
-        self.current_frame_changed.emit()
+        self._selected_scene_idx = None
+        self.set_selected_lot_idx(0)
+        self.update_current_frame("00000")
+        self.data_loaded.emit()
         return True
 
     def current_frame(self):
@@ -48,21 +54,47 @@ class SceneData(QObject):
         self._current_frame = value
         self.current_frame_changed.emit()
 
-    def current_lot_id(self):
-        return self._current_lot_id
+    def selected_lot_idx(self):
+        return self._selected_lot_idx
 
-    def update_current_lot_id(self, value):
-        self._current_lot_id = value
-        self.current_lot_id_changed.emit()
+    def set_selected_lot_idx(self, value):
+        self._selected_lot_idx = value
+        self.selected_lot_idx_changed.emit()
+
+    def current_lot_id(self):
+        if self._selected_lot_idx is None:
+            return None
+        return self.lot_ids()[self._selected_lot_idx]
+
+    def current_lot_img(self):
+        return cv2.imread(self.parent_dir() / self.current_lot_id() / (self._current_frame + ".jpg"))
+
+    def selected_scene(self):
+        return self.scenes_with_current_lot_id()[self._selected_scene_idx]
+
+    def selected_scene_idx(self):
+        return self._selected_scene_idx
+
+    def set_selected_scene_idx(self, value):
+        self._selected_scene_idx = value
+        if value is not None:
+            scene = self.selected_scene()
+            self.update_current_frame(scene["frame"])
+        self.selected_scene_idx_changed.emit()
 
     def scenes_with_current_lot_id(self):
-        if self._current_lot_id is None:
+        if self.current_lot_id() is None:
             return None
-        return self._scenes[self._current_lot_id]
+        return self._scenes[self.current_lot_id()]
+
+    def sort_scenes(self):
+        scenes = self.scenes_with_current_lot_id()
+        if scenes is not None:
+            scenes.sort(key=lambda x: x["frame"])
 
     def get_label_find_by_frame(self, frame):
         scenes = self.scenes_with_current_lot_id()
-        if frame is None or not scenes:
+        if (frame is None) or (not scenes):
             return None
         for d in scenes:
             if d["frame"] == frame:
@@ -131,11 +163,28 @@ class SceneData(QObject):
     def scenes(self):
         return self._scenes
 
-    def add_scene(self, key, scene):
-        self._scenes[key].append(scene)
+    def label_is_exist_in_frame(self, frame):
+        scenes = self.scenes_with_current_lot_id()
+        for scene in scenes:
+            if scene["frame"] == frame:
+                return True
+        return False
 
-    def remove_scene(self, key, scene):
-        self._scenes[key].remove(scene)
+    def add_scene(self, label):
+        if self.label_is_exist_in_frame(self._current_frame):
+            return
+        self.scenes_with_current_lot_id().append({"label": label, "frame": self._current_frame})
+        self.sort_scenes()
+        self.data_changed.emit()
+
+    def remove_selected_scene(self):
+        scenes = self.scenes_with_current_lot_id()
+        if not scenes:
+            return
+        if self._selected_scene_idx is None:
+            return
+        scenes.pop(self._selected_scene_idx)
+        self.data_changed.emit()
 
     def loaded(self) -> bool:
         return self._loaded

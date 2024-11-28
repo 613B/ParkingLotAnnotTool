@@ -2,20 +2,22 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
+from .scenedata import SceneData
 
 class SeekBarWidget(QWidget):
-    valueChanged = pyqtSignal(int)
 
-    def __init__(self, parent=None):
+    def __init__(self, scene_data: SceneData, parent=None):
         super().__init__(parent)
 
+        self.scene_data = scene_data
+        self.scene_data.selected_lot_idx_changed.connect(self.repaint)
+        self.scene_data.data_changed.connect(self.repaint)
+        self.scene_data.selected_scene_idx_changed.connect(self.update_value)
         self.slider = QSlider(Qt.Orientation.Horizontal)
         self.slider.setMinimum(0)
         self.slider.setMaximum(100)
         self.slider.setValue(0)
-        self.slider.valueChanged.connect(self.emit_value_changed)
-
-        self.scenes = {'busy': set([]), 'free': set([])}
+        self.slider.valueChanged.connect(self.value_changed)
 
         self.prev_button = QPushButton("◀")
         self.next_button = QPushButton("▶")
@@ -60,12 +62,8 @@ class SeekBarWidget(QWidget):
         value = self.slider.value()
         self.slider.setValue(max(value + self.increment, self.slider.minimum()))
 
-    def reset_scenes(self):
-        self.scenes = {'busy': set([]), 'free': set([])}
-        self.repaint()
-
-    def emit_value_changed(self, value):
-        self.valueChanged.emit(value)
+    def value_changed(self, value):
+        self.scene_data.update_current_frame(f"{value:05d}")
 
     def set_maxvalue(self, value):
         self.slider.setMaximum(value)
@@ -79,34 +77,27 @@ class SeekBarWidget(QWidget):
     def set_value(self, value):
         self.slider.setValue(value)
 
-    def add_busy_scene(self):
-        self.scenes['busy'].add(self.slider.value())
-
-    def add_free_scene(self):
-        self.scenes['free'].add(self.slider.value())
-
-    def remove_busy_scene(self, value):
-        self.scenes['busy'].remove(value)
-
-    def remove_free_scene(self, value):
-        self.scenes['free'].remove(value)
+    def update_value(self):
+        self.slider.setValue(int(self.scene_data.current_frame()))
 
     def paintEvent(self, event):
         super().paintEvent(event)
-        painter = QPainter(self)
 
+        if self.scene_data.scenes_with_current_lot_id() is None:
+            return
+
+        painter = QPainter(self)
         slider_rect = self.slider.geometry()
         slider_min = self.slider.minimum()
         slider_max = self.slider.maximum()
         pen_free = QPen(QColor("green"), 2)
         pen_busy = QPen(QColor("red"), 2)
 
-        for key, scenes_set in self.scenes.items():
-            if key == 'free':
+        for scene in self.scene_data.scenes_with_current_lot_id():
+            if scene["label"] == 'free':
                 painter.setPen(pen_free)
-            if key == 'busy':
+            if scene["label"] == 'busy':
                 painter.setPen(pen_busy)
-            for scene in scenes_set:
-                marker = slider_rect.left() + slider_rect.width() * (scene - slider_min) / (slider_max - slider_min)
-                marker = int(marker)
-                painter.drawLine(marker, slider_rect.top(), marker, slider_rect.bottom())
+            marker = slider_rect.left() + slider_rect.width() * (int(scene["frame"]) - slider_min) / (slider_max - slider_min)
+            marker = int(marker)
+            painter.drawLine(marker, slider_rect.top(), marker, slider_rect.bottom())

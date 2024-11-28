@@ -7,7 +7,7 @@ from mainwindow import MainWindow
 def main():
     print("ParkingLotAnnotTool is running.")
     app = QApplication(sys.argv)
-    app.setStyle("WindowsVist")  # white mode explicitly
+    app.setStyle("WindowsVista")  # white mode explicitly
     main_window = MainWindow()
     main_window.show()
     sys.exit(app.exec())

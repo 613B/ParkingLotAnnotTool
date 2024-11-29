@@ -92,47 +92,56 @@ class SceneData(QObject):
         if scenes is not None:
             scenes.sort(key=lambda x: x["frame"])
 
-    def get_label_find_by_frame(self, frame):
-        scenes = self.scenes_with_current_lot_id()
-        if (frame is None) or (not scenes):
-            return None
-        for d in scenes:
-            if d["frame"] == frame:
-                return d["label"]
-        return self.prev_scene_label()
+    def current_scene(self):
+        return self.prev_scene()
 
     def current_label(self):
-        return self.get_label_find_by_frame(self._current_frame)
+        if self.current_scene() is None:
+            return None
+        return self.current_scene()["label"]
 
-    def get_frames_adjacent_scenes(self, frame):
+    def get_adjacent_scenes(self):
+        self.sort_scenes()
         scenes = self.scenes_with_current_lot_id()
         if not scenes:
             return None, None
-        frames = [d["frame"] for d in scenes]
-        sorted_values = sorted(frames)
 
-        for i in range(len(sorted_values) - 1):
-            if sorted_values[i] <= frame < sorted_values[i + 1]:
-                return sorted_values[i], sorted_values[i + 1]
+        prev_scene, next_scene = None, None
+        for i in range(len(scenes)):
+            frame = scenes[i]["frame"]
+            if self._current_frame >= frame:
+                prev_scene = scenes[i]
+            if self._current_frame < frame:
+                next_scene = scenes[i]
+        return prev_scene, next_scene
 
-        if frame < sorted_values[0]:
-            return None, sorted_values[0]
-        elif frame >= sorted_values[-1]:
-            return sorted_values[-1], None
+    def next_scene(self):
+        prev_scene, next_scene = self.get_adjacent_scenes()
+        return next_scene
+
+    def prev_scene(self):
+        prev_scene, next_scene = self.get_adjacent_scenes()
+        return prev_scene
 
     def next_scene_frame(self):
-        prev, next = self.get_frames_adjacent_scenes(self._current_frame)
-        return next
+        if self.next_scene() is None:
+            return None
+        return self.next_scene()["frame"]
 
     def prev_scene_frame(self):
-        prev, next = self.get_frames_adjacent_scenes(self._current_frame)
-        return prev
+        if self.prev_scene() is None:
+            return None
+        return self.prev_scene()["frame"]
 
     def next_scene_label(self):
-        return self.get_label_find_by_frame(self.next_scene_frame())
+        if self.next_scene() is None:
+            return None
+        return self.next_scene()["label"]
 
     def prev_scene_label(self):
-        return self.get_label_find_by_frame(self.prev_scene_frame())
+        if self.prev_scene() is None:
+            return None
+        return self.prev_scene()["label"]
 
     def info(self):
         return {
@@ -173,8 +182,18 @@ class SceneData(QObject):
     def add_scene(self, label):
         if self.label_is_exist_in_frame(self._current_frame):
             return
-        self.scenes_with_current_lot_id().append({"label": label, "frame": self._current_frame})
+        self.scenes_with_current_lot_id().append(
+            {
+                "label": label,
+                "frame": self._current_frame,
+                "flags": []})
         self.sort_scenes()
+        self.data_changed.emit()
+
+    def add_occluded_flag(self):
+        if self.prev_scene() is None:
+            return
+        self.prev_scene()["flags"].append("occluded")
         self.data_changed.emit()
 
     def remove_selected_scene(self):

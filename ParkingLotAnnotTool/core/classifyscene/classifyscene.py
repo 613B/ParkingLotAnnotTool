@@ -33,6 +33,7 @@ class ClassifySceneWidget(QWidget):
         self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
         self.free_action = new_action(self, 'Free', icon_text='Free', slot=self.click_free, shortcut=QKeySequence("1"))
         self.busy_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_busy, shortcut=QKeySequence("2"))
+        self.occluded_action = new_action(self, 'Occluded', icon_text='Occluded', slot=self.click_occluded, shortcut=QKeySequence("3"))
         self.view_zoom_fit_action = new_action(self, 'Zoom Fit', icon=read_icon('zoom_fit.png'), slot=self.press_view_zoom_fit)
         self.view_zoom_1_action = new_action(self, 'Zoom 100%', icon=read_icon('zoom_1.png'), slot=self.press_view_zoom_1)
         self.toolbar = QToolBar()
@@ -43,6 +44,7 @@ class ClassifySceneWidget(QWidget):
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.free_action)
         self.toolbar.addAction(self.busy_action)
+        self.toolbar.addAction(self.occluded_action)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.view_zoom_fit_action)
         self.toolbar.addAction(self.view_zoom_1_action)
@@ -92,6 +94,11 @@ class ClassifySceneWidget(QWidget):
     def click_busy_impl(self) -> None:
         self.scene_data.add_scene("busy")
 
+    def click_occluded(self) -> None:
+        traceback_and_exit(self.click_occluded_impl)
+    def click_occluded_impl(self) -> None:
+        self.scene_data.add_occluded_flag()
+
     def press_view_zoom_fit(self) -> None:
         traceback_and_exit(self.press_view_zoom_fit_impl)
     def press_view_zoom_fit_impl(self) -> None:
@@ -104,7 +111,9 @@ class ClassifySceneWidget(QWidget):
 
     def refresh(self):
         self.canvas_picture.set_picture(self.scene_data.current_lot_img())
-        prev_label = self.scene_data.prev_scene_label()
+        prev_scene = self.scene_data.prev_scene()
+        prev_label = prev_scene["label"]
+        prev_flags = prev_scene["flags"]
         if   prev_label is None:
             self.busy_action.setEnabled(True)
             self.free_action.setEnabled(True)
@@ -115,6 +124,12 @@ class ClassifySceneWidget(QWidget):
             self.busy_action.setEnabled(False)
             self.free_action.setEnabled(True)
 
+        if not prev_flags:
+            self.occluded_action.setEnabled(True)
+            return
+        for prev_flag in prev_flags:
+            if prev_flag == "occluded":
+                self.occluded_action.setEnabled(False)
 
 class SignalBlocker:
     def __init__(self, widget):

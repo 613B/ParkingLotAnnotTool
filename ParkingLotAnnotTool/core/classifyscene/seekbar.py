@@ -92,6 +92,10 @@ class SeekBarWidget(QWidget):
         slider_max = self.slider.maximum()
         pen_free = QPen(QColor("green"), 2)
         pen_busy = QPen(QColor("red"), 2)
+        pen_occluded = QPen(QColor("blue"), 2)
+
+        line_length = slider_rect.bottom() - slider_rect.top()
+        center = slider_rect.top() + int(line_length / 2)
 
         for scene in self.scene_data.scenes_with_current_lot_id():
             if scene["label"] == 'free':
@@ -100,4 +104,12 @@ class SeekBarWidget(QWidget):
                 painter.setPen(pen_busy)
             marker = slider_rect.left() + slider_rect.width() * (int(scene["frame"]) - slider_min) / (slider_max - slider_min)
             marker = int(marker)
-            painter.drawLine(marker, slider_rect.top(), marker, slider_rect.bottom())
+            painter.drawLine(marker, center - line_length, marker, center)
+
+            flags = scene["flags"]
+            if not flags:
+                continue
+            for flag in flags:
+                if flag == "occluded":
+                    painter.setPen(pen_occluded)
+                painter.drawLine(marker, center, marker, center + line_length)

@@ -7,7 +7,7 @@ class VideoExtractWorker(QThread):
     finished = pyqtSignal()
     canceled = pyqtSignal()
 
-    def __init__(self, video_path, output_dir, interval, quality=100):
+    def __init__(self, video_path, output_dir, interval, quality=95):
         super().__init__()
         self.video_path = video_path
         self.output_dir = output_dir

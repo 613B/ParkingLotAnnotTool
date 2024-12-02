@@ -14,7 +14,7 @@ class ImageCropWorker(QThread):
     finished = pyqtSignal()
     canceled = pyqtSignal()
 
-    def __init__(self, scene_json_path: Path, quality=100):
+    def __init__(self, scene_json_path: Path, quality=95):
         super().__init__()
         self.progress.emit(0)
         self.data = {}

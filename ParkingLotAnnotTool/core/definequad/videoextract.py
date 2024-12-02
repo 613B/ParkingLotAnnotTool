@@ -21,7 +21,7 @@ class VideoExtractWorker(QThread):
 
         cap = cv2.VideoCapture(self.video_path)
         fps = cap.get(cv2.CAP_PROP_FPS)
-        frame_interval = int(fps * self.interval)
+        frame_interval = round(fps * self.interval)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         frame_indices = range(0, total_frames, frame_interval)

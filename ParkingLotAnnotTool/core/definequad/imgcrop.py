@@ -65,47 +65,26 @@ class ImageCropWorker(QThread):
 
     # TODO implement new method
     def imgcrop(self, image: Image, contours: List[Tuple[int, int]]) -> Image:
-        xmin = self.get_xmin(contours)
-        xmax = self.get_xmax(contours)
-        ymin = self.get_ymin(contours)
-        ymax = self.get_ymax(contours)
-        w = xmax - xmin
-        h = ymax - ymin
+        up_sample_rate = 1.2
 
-        img_cropped = image.crop((xmin, ymin, xmax, ymax))
-        aspect_ratio = w / h
-        if w > h:
-            w_r = self.MODEL_WIDTH
-            h_r = int(self.MODEL_HEIGHT / aspect_ratio)
-        else:
-            h_r = self.MODEL_HEIGHT
-            w_r = int(self.MODEL_WIDTH / aspect_ratio)
-        img_cropped_r = img_cropped.resize((w_r, h_r))
-        contours_r = self.get_resized_contours(contours, (w_r, h_r), offset=True)
-        mask = Image.new("L", (w_r, h_r), 0)
-        draw = ImageDraw.Draw(mask)
-        draw.polygon(contours_r, fill=255, outline=None)
-        black =  Image.new("RGB", (w_r, h_r), (0, 0, 0))
-        crop_polygon = Image.composite(img_cropped_r, black, mask)
-        black_square = Image.new("RGB", (self.MODEL_WIDTH, self.MODEL_HEIGHT), (0, 0, 0))
-        offset = ((self.MODEL_WIDTH - w_r) // 2, (self.MODEL_HEIGHT - h_r) // 2)
-        black_square.paste(crop_polygon, offset)
-        return black_square
-
-    def get_resized_contours(self, contours, size, offset=False):
-        xmin = self.get_xmin(contours)
-        xmax = self.get_xmax(contours)
-        ymin = self.get_ymin(contours)
-        ymax = self.get_ymax(contours)
-        height = ymax - ymin
-        width = xmax - xmin
-        if offset:
-            x_offset = xmin
-            y_offset = ymin
-        else:
-            x_offset = 0
-            y_offset = 0
-        h_scale = (size[1]/height)
-        w_scale = (size[0]/width)
-        return [(((x - x_offset) * w_scale), ((y - y_offset) * h_scale)) for x, y in contours]
-
+        orig_xmin = self.get_xmin(contours)
+        orig_xmax = self.get_xmax(contours)
+        orig_ymin = self.get_ymin(contours)
+        orig_ymax = self.get_ymax(contours)
+        w = orig_xmax - orig_xmin
+        h = orig_ymax - orig_ymin
+        long_side = max(w, h)
+        crop_w = (long_side * up_sample_rate)
+        crop_h = crop_w
+        xmin = int(orig_xmin) - (crop_w - w) // 2
+        ymin = int(orig_ymin) - (crop_h - h) // 2
+        xmax = xmin + crop_w
+        ymax = ymin + crop_h
+        cropped_img = image.crop((xmin, ymin, xmax, ymax))
+        offseted_contours = [(p[0] - xmin, p[1] - ymin) for p in contours]
+        scale = self.MODEL_WIDTH / cropped_img.size[0]
+        resized_contours = [(p[0] * scale, p[1] * scale) for p in offseted_contours]
+        dst = cropped_img.resize((self.MODEL_WIDTH, self.MODEL_HEIGHT))
+        draw = ImageDraw.Draw(dst)
+        draw.polygon(resized_contours, outline="red", width=5)
+        return dst

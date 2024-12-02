@@ -112,6 +112,8 @@ class ClassifySceneWidget(QWidget):
     def refresh(self):
         self.canvas_picture.set_picture(self.scene_data.current_lot_img())
         prev_scene = self.scene_data.prev_scene()
+        if prev_scene is None:
+            return
         prev_label = prev_scene["label"]
         prev_flags = prev_scene["flags"]
         if   prev_label is None:

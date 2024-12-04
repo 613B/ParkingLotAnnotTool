@@ -28,7 +28,7 @@ class ClassifyConditionsWidget(QWidget):
         self.seekbar.valueChanged.connect(self.on_seekbar_value_changed)
 
         self.open_action = new_action(self, 'Open', icon=read_icon('open_file.png'), slot=self.click_open)
-        self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
+        self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save, shortcut=QKeySequence("Ctrl+S"))
         # TODO setshortcut
         self.sunny_action = new_action(self, 'Sunny', icon_text='Sunny', slot=self.click_sunny)
         self.rainy_action = new_action(self, 'Rainy', icon_text='Rainy', slot=self.click_rainy)

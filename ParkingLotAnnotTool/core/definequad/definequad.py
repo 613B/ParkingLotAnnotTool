@@ -46,7 +46,7 @@ class DefineQuadWidget(QWidget):
         self.canvas_scroll = CanvasScroll(self, self.canvas_picture)
 
         self.open_action = new_action(self, 'Open', icon=read_icon('open_file.png'), slot=self.click_open)
-        self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
+        self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save, shortcut=QKeySequence("Ctrl+S"))
         self.draw_action = new_action(self, 'Draw', icon=read_icon('draw.png'), slot=self.click_draw, checkable=True)
         self.none_action = new_action(self, 'None', icon=read_icon('arrow.png'), slot=self.click_none, checkable=True)
         self.extract_frames_action = new_action(self, 'Extract frames', icon=read_icon('film.png'), slot=self.click_extract_frames)

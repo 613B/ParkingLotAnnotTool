@@ -30,7 +30,7 @@ class ClassifySceneWidget(QWidget):
         self.seekbar = SeekBarWidget(self.scene_data)
 
         self.open_action = new_action(self, 'Open', icon=read_icon('open_file.png'), slot=self.click_open)
-        self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save)
+        self.save_action = new_action(self, 'Save', icon=read_icon('save.png'), slot=self.click_save, shortcut=QKeySequence("Ctrl+S"))
         self.free_action = new_action(self, 'Free', icon_text='Free', slot=self.click_free, shortcut=QKeySequence("1"))
         self.busy_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_busy, shortcut=QKeySequence("2"))
         self.occluded_action = new_action(self, 'Occluded', icon_text='Occluded', slot=self.click_occluded, shortcut=QKeySequence("3"))

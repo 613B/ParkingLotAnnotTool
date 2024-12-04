@@ -143,10 +143,28 @@ class SceneData(QObject):
             return None
         return self.prev_scene()["label"]
 
+    def num_scenes(self):
+        scenes = self.scenes_with_current_lot_id()
+        if scenes is None:
+            return 0
+        return len(scenes)
+
+    def num_occluded_scenes(self):
+        scenes = self.scenes_with_current_lot_id()
+        if scenes is None:
+            return 0
+        size = 0
+        for scene in scenes:
+            if "occluded" in scene["flags"]:
+                size += 1
+        return size
+
     def info(self):
         return {
             "frame": self.current_frame(),
-            "label": self.current_label()}
+            "label": self.current_label(),
+            "num scenes": self.num_scenes(),
+            "num occluded\nscenes": self.num_occluded_scenes()}
 
     def parent_dir(self) -> Path:
         return self._json_path.parent
@@ -245,6 +263,7 @@ class SceneDataInfoWidget(QWidget):
         self.scene_data = scene_data
         layout, self.line_edits = self.dict_to_layout(self.scene_data.info())
         self.setLayout(layout)
+        self.adjustSize()
 
     def dict_to_layout(self, data):
         layout = QVBoxLayout()

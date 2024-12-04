@@ -13,6 +13,7 @@ class MainWindow(QMainWindow):
         # WindowSettings
         self.setWindowTitle("ParkingLotAnnotTool v1.0")
         self.setGeometry(100, 100, 800, 600)
+        self.setMinimumWidth(1000)
 
         self.setMenuBar(MenuBar(self))
         self.setCentralWidget(CoreWidget(self))

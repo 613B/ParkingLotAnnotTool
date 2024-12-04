@@ -2,6 +2,10 @@
 
 import sys
 from PyQt6.QtWidgets import QApplication
+
+import ParkingLotAnnotTool.public.signals as Signals
+Signals.initialize()
+
 from mainwindow import MainWindow
 
 def main():

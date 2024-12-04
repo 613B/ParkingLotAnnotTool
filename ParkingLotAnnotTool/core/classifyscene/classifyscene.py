@@ -4,8 +4,8 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
+from ParkingLotAnnotTool.public.signals import global_signals
 from ParkingLotAnnotTool.utils.resource import read_icon
-from ParkingLotAnnotTool.utils.signal import *
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
 from ..general.action import new_action
 from ..general.canvas import CanvasPicture, CanvasScroll
@@ -70,11 +70,11 @@ class ClassifySceneWidget(QWidget):
         traceback_and_exit(self.click_open_impl)
     def click_open_impl(self) -> None:
         file_path = QFileDialog.getOpenFileName(self, "Open File", "", "scene.json (scene.json)")
-        print(file_path)
         if file_path == ('', ''):
             return
         self.scene_data.set_json_path(file_path[0])
         self.scene_data.load()
+        global_signals.print(f"[{self.__class__.__name__}] open: {file_path[0]}")
         self.seekbar.set_maxvalue(self.scene_data.len_frames()-1)
         self.canvas_picture.set_picture(self.scene_data.current_lot_img())
         self.canvas_scroll.fit_window()
@@ -82,6 +82,7 @@ class ClassifySceneWidget(QWidget):
     def click_save(self) -> None:
         traceback_and_exit(self.click_save_impl)
     def click_save_impl(self) -> None:
+        global_signals.print(f"[{self.__class__.__name__}] save.")
         self.scene_data.save()
 
     def click_free(self) -> None:

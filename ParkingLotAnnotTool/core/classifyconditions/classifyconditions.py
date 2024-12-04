@@ -4,8 +4,8 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
+from ParkingLotAnnotTool.public.signals import global_signals
 from ParkingLotAnnotTool.utils.resource import read_icon
-from ParkingLotAnnotTool.utils.signal import *
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
 from ..general.action import new_action
 from ..general.canvas import CanvasPicture, CanvasScroll
@@ -72,11 +72,11 @@ class ClassifyConditionsWidget(QWidget):
         traceback_and_exit(self.click_open_impl)
     def click_open_impl(self) -> None:
         file_path = QFileDialog.getOpenFileName(self, "Open File", "", "conditions.json (conditions.json)")
-        print(file_path)
         if file_path == ('', ''):
             return
         self.conditions_data.set_json_path(file_path[0])
         self.conditions_data.load()
+        global_signals.print(f"[{self.__class__.__name__}] open: {file_path[0]}")
         self.seekbar.set_maxvalue(self.conditions_data.len_frames()-1)
         img = cv2.imread(self.conditions_data.raw_data_dir() / self.conditions_data.frame_names()[0], cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
@@ -85,6 +85,7 @@ class ClassifyConditionsWidget(QWidget):
     def click_save(self) -> None:
         traceback_and_exit(self.click_save_impl)
     def click_save_impl(self) -> None:
+        global_signals.print(f"[{self.__class__.__name__}] save.")
         self.conditions_data.save()
 
     def click_rainy(self) -> None:

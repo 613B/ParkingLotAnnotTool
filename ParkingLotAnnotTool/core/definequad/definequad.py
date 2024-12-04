@@ -7,9 +7,9 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QDialogButtonBox as QDBB
 
+from ParkingLotAnnotTool.public.signals import global_signals
 from ParkingLotAnnotTool.utils.geometry import is_polygon_convex
 from ParkingLotAnnotTool.utils.resource import read_icon
-from ParkingLotAnnotTool.utils.signal import *
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
 from ..general.canvas import CanvasPicture, CanvasScroll
 from ..general.action import new_action
@@ -98,6 +98,7 @@ class DefineQuadWidget(QWidget):
             self.lots_data.set_json_path(file_path[0])
             self.lots_data.load()
             image_path = self.lots_data.image_path()
+        global_signals.print(f"[{self.__class__.__name__}] open: {image_path}")
         img = cv2.imread(image_path, cv2.IMREAD_COLOR)
         self.canvas_picture.set_picture(img)
         self.canvas_scroll.fit_window()
@@ -105,6 +106,7 @@ class DefineQuadWidget(QWidget):
     def click_save(self) -> None:
         traceback_and_exit(self.click_save_impl)
     def click_save_impl(self) -> None:
+        global_signals.print(f"[{self.__class__.__name__}] save.")
         if self.lots_data.json_path() is None:
             file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "Json File (*.json)")
             self.lots_data.set_json_path(file_path)

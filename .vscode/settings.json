@@ -12,5 +12,6 @@
     "--select=W",
     "--ignore=F403",
     "--ignore=F405",
-    "--ignore=E501"],
+    "--ignore=E501",
+    "--ignore=E402"],
 }

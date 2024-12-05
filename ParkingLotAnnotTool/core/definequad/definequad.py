@@ -184,15 +184,22 @@ class DefineQuadWidget(QWidget):
         if not ok:
             return
 
-        scenes_data = {
-            "version": "0.1",
-            "video_path": str(video_path),
-            "lots": self.lots_data.lots(),
-            "scenes": {}
-        }
-        for lot in self.lots_data.lots():
-            scenes_data["scenes"][lot["id"]] = []
         self.scene_json_path = outdir_path / "scene.json"
+        if self.scene_json_path.exists():
+            with open(self.scene_json_path, 'r', encoding='utf-8') as file:
+                scenes_data = json.load(file)
+            scenes_data["lots"] = self.lots_data.lots()
+        else:
+            scenes_data = {
+                "version": "0.1",
+                "video_path": str(video_path),
+                "lots": self.lots_data.lots(),
+                "scenes": {}
+            }
+        for lot in self.lots_data.lots():
+            if lot["id"] in scenes_data["scenes"]:
+                continue
+            scenes_data["scenes"][lot["id"]] = []
         with open(self.scene_json_path, 'w', encoding='utf-8') as file:
             json.dump(scenes_data, file, ensure_ascii=False, indent=4)
 

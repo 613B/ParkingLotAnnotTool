@@ -133,7 +133,7 @@ class DefineQuadWidget(QWidget):
         self.lots_data.set_addable(True)
         self.lots_data.set_editable(False)
 
-    def video_extraction_start(self, video_path, outdir_path, interval):
+    def video_extraction_start(self, video_path: Path, outdir_path: Path, interval):
         self.progress_dialog = QProgressDialog("Extracting frames...", "Cancel", 0, 100, self)
         self.videoextract_worker = VideoExtractWorker(video_path, outdir_path, interval)
 
@@ -143,7 +143,20 @@ class DefineQuadWidget(QWidget):
         self.videoextract_worker.progress.connect(self.progress_dialog.setValue)
         self.videoextract_worker.finished.connect(self.image_cropping_start)
         self.videoextract_worker.canceled.connect(self.progress_dialog.close)
-        self.videoextract_worker.start()
+        if outdir_path.exists():
+            msg_box = QMessageBox()
+            msg_box.setIcon(QMessageBox.Icon.Question)
+            msg_box.setWindowTitle('Skip?')
+            msg_box.setText('Your video may have already been extracted. Do you want to skip this step?')
+            msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            msg_box.setDefaultButton(QMessageBox.StandardButton.Yes)
+            result = msg_box.exec()
+            if result == QMessageBox.StandardButton.Yes:
+                self.videoextract_worker.finished.emit()
+            else:
+                self.videoextract_worker.start()
+        else:
+            self.videoextract_worker.start()
 
     def image_cropping_start(self):
         self.imagecrop_worker = ImageCropWorker(self.scene_json_path)

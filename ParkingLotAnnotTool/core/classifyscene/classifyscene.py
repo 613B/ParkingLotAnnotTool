@@ -20,7 +20,6 @@ class ClassifySceneWidget(QWidget):
         self.editable = True
         self.scene_data = SceneData()
         self.scene_data_info = SceneDataInfoWidget(self.scene_data)
-        self.scene_data.current_frame_changed.connect(self.scene_data_info.update)
         self.scene_data.current_frame_changed.connect(self.refresh)
         self.scene_data.data_changed.connect(self.refresh)
         self.scene_data.selected_lot_idx_changed.connect(self.refresh)

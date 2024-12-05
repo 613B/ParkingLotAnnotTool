@@ -261,6 +261,10 @@ class SceneDataInfoWidget(QWidget):
     def __init__(self, scene_data: SceneData, parent=None):
         super(SceneDataInfoWidget, self).__init__()
         self.scene_data = scene_data
+        self.scene_data.current_frame_changed.connect(self.update)
+        self.scene_data.selected_lot_idx_changed.connect(self.update)
+        self.scene_data.selected_scene_idx_changed.connect(self.update)
+        self.scene_data.data_changed.connect(self.update)
         layout, self.line_edits = self.dict_to_layout(self.scene_data.info())
         self.setLayout(layout)
         self.adjustSize()

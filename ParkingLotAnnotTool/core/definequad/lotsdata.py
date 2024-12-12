@@ -1,6 +1,6 @@
 import json
 from typing import Optional
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal, Qt
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QMessageBox as QMB
 
@@ -66,6 +66,30 @@ class LotsData(QObject):
     def set_selected_idx(self, idx):
         self._selected_idx = idx
         self.selected_idx_changed.emit()
+
+    def selected_lot(self):
+        if self._selected_idx is None:
+            return None
+        return self._lots[self._selected_idx]
+    
+    def selected_lot_id(self):
+        if self.selected_lot() is None:
+            return ""
+        return self.selected_lot()["id"]
+    
+    def selected_lot_area(self):
+        lot = self.selected_lot()
+        if lot is None:
+            return 0.0
+        q = lot["quad"]
+        coordinates = [[q[i], q[i+1]] for i in range(0, len(q), 2)]
+        area = 0.0
+        for i in range(len(coordinates)):
+            j = (i + 1) % len(coordinates)
+            area += coordinates[i][0] * coordinates[j][1]
+            area -= coordinates[j][0] * coordinates[i][1]
+        area = abs(area) / 2.0
+        return area
 
     def save(self):
         data = {
@@ -194,3 +218,48 @@ class LotsData(QObject):
             'quad': [x1, y1, x2, y2, x3, y3, x4, y4]})
         self._dirty = True
         self.data_changed.emit()
+    
+    def info(self):
+        return {
+            "id": self.selected_lot_id(),
+            "area": self.selected_lot_area(),
+        }
+
+class LotsDataInfoWidget(QWidget):
+    def __init__(self, lots_data: LotsData, parent=None):
+        super(LotsDataInfoWidget, self).__init__()
+        self.lots_data = lots_data
+        self.lots_data.selected_idx_changed.connect(self.update)
+        self.lots_data.data_changed.connect(self.update)
+        layout, self.line_edits = self.dict_to_layout(self.lots_data.info())
+        self.setMaximumWidth(150)
+        self.setLayout(layout)
+
+    def dict_to_layout(self, data):
+        layout = QVBoxLayout()
+        line_edits = {}
+        for key, value in data.items():
+            label = QLabel(str(key))
+            line_edit = QLineEdit()
+            if value is None:
+                line_edit.setText("None")
+            else:
+                line_edit.setText(str(value))
+            line_edit.setMinimumWidth(len(str(value)) * 10)
+            line_edit.setAlignment(Qt.AlignmentFlag.AlignRight)
+            line_edit.setEnabled(False)
+            line_edits[key] = line_edit
+            _layout = QHBoxLayout()
+            _layout.addWidget(label)
+            _layout.addWidget(line_edit)
+            layout.addLayout(_layout)
+        layout.addStretch()
+        return layout, line_edits
+
+    def update(self):
+        for key, value in self.lots_data.info().items():
+            self.line_edits[key].setEnabled(True)
+            if value is None:
+                self.line_edits[key].setText("None")
+            else:
+                self.line_edits[key].setText(str(value))

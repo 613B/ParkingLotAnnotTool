@@ -13,7 +13,7 @@ from ParkingLotAnnotTool.utils.resource import read_icon
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
 from ..general.canvas import CanvasPicture, CanvasScroll
 from ..general.action import new_action
-from .lotsdata import LotsData
+from .lotsdata import LotsData, LotsDataInfoWidget
 from .imgcrop import ImageCropWorker
 from .videoextract import VideoExtractWorker
 
@@ -34,6 +34,7 @@ class DefineQuadWidget(QWidget):
 
         self.editable = True
         self.lots_data = LotsData()
+        self.lots_data_info = LotsDataInfoWidget(self.lots_data)
 
         self.canvas = Canvas(self.lots_data)
         self.canvas_picture = CanvasPicture()
@@ -71,6 +72,7 @@ class DefineQuadWidget(QWidget):
         layout = QHBoxLayout(self)
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas_scroll)
+        layout.addWidget(self.lots_data_info)
         layout.addWidget(self.lot_list)
         self.setLayout(layout)
 

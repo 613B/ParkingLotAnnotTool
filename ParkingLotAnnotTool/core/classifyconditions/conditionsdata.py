@@ -176,6 +176,7 @@ class ConditionsDataInfoWidget(QWidget):
         super(ConditionsDataInfoWidget, self).__init__()
         self.conditions_data = conditions_data
         layout, self.line_edits = self.dict_to_layout(self.conditions_data.info())
+        self.setMaximumWidth(150)
         self.setLayout(layout)
 
     def dict_to_layout(self, data):

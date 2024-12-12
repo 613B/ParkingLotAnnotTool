@@ -53,6 +53,7 @@ class ClassifyConditionsWidget(QWidget):
         self.toolbar.addAction(self.settings_action)
 
         self.conditions_list = QListWidget(self)
+        self.conditions_list.setMaximumWidth(200)
         self.conditions_list.itemSelectionChanged.connect(self.on_conditionslist_itemselection_changed)
 
         layout = QGridLayout(self)

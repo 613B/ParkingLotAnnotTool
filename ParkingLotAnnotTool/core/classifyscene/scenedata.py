@@ -112,6 +112,8 @@ class SceneData(QObject):
             if self._current_frame >= frame:
                 prev_scene = scenes[i]
             if self._current_frame < frame:
+                if (next_scene is not None) and (frame > next_scene["frame"]):
+                    break
                 next_scene = scenes[i]
         return prev_scene, next_scene
 

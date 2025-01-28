@@ -284,10 +284,10 @@ class AddLotDialog(QDialog):
             ymax = max(mouse_pressed_y, mouse_y)
             self.lots_data.add_lot(
                 lot_id,
-                int(xmin), int(ymin),
-                int(xmax), int(ymin),
-                int(xmax), int(ymax),
-                int(xmin), int(ymax))
+                xmin, ymin,
+                xmax, ymin,
+                xmax, ymax,
+                xmin, ymax)
         except RuntimeError:
             # signals.print(f'Add Lot failed. {e}.')
             pass
@@ -317,14 +317,14 @@ class Canvas:
         elif event.key() == Qt.Key.Key_Delete:
             self.lots_data.delete_selected_area()
 
-    def mouse_double_click_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
+    def mouse_double_click_event(self, event: QMouseEvent, pos: QPointF, scale: float) -> None:
         traceback_and_exit(self.mouse_double_click_event_impl, event=event, pos=pos, scale=scale)
-    def mouse_double_click_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
+    def mouse_double_click_event_impl(self, event: QMouseEvent, pos: QPointF, scale: float) -> None:
         pass
 
-    def mouse_move_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
+    def mouse_move_event(self, event: QMouseEvent, pos: QPointF, scale: float) -> None:
         traceback_and_exit(self.mouse_move_event_impl, event=event, pos=pos, scale=scale)
-    def mouse_move_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
+    def mouse_move_event_impl(self, event: QMouseEvent, pos: QPointF, scale: float) -> None:
         mouse_x = pos.x()
         mouse_y = pos.y()
 
@@ -365,9 +365,9 @@ class Canvas:
         self.mouse_x = pos.x()
         self.mouse_y = pos.y()
 
-    def mouse_press_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
+    def mouse_press_event(self, event: QMouseEvent, pos: QPointF, scale: float) -> None:
         traceback_and_exit(self.mouse_press_event_impl, event=event, pos=pos, scale=scale)
-    def mouse_press_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
+    def mouse_press_event_impl(self, event: QMouseEvent, pos: QPointF, scale: float) -> None:
 
         if event.button() == Qt.MouseButton.LeftButton:
             self.mouse_pressed = True
@@ -383,9 +383,9 @@ class Canvas:
            (self.mouse_pressed_on_lot):
             self.lots_data.set_selected_idx(self.highlighted_lidx)
 
-    def mouse_release_event(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
+    def mouse_release_event(self, event: QMouseEvent, pos: QPointF, scale: float) -> None:
         traceback_and_exit(self.mouse_release_event_impl, event=event, pos=pos, scale=scale)
-    def mouse_release_event_impl(self, event: QMouseEvent, pos: QPoint, scale: float) -> None:
+    def mouse_release_event_impl(self, event: QMouseEvent, pos: QPointF, scale: float) -> None:
         if (self.lots_data.is_addable()) and \
            (event.button() == Qt.MouseButton.LeftButton) and \
            (self.mouse_pressed_x is not None) and \

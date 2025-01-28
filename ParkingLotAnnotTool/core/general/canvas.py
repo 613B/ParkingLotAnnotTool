@@ -16,10 +16,10 @@ class CanvasPicture(QWidget):
     focus_out_event_sig     = pyqtSignal(QFocusEvent)
     key_press_event_sig     = pyqtSignal(QKeyEvent)
     leave_event_sig         = pyqtSignal(QEvent)
-    mouse_double_click_sig  = pyqtSignal(QMouseEvent, QPoint, float)
-    mouse_move_event_sig    = pyqtSignal(QMouseEvent, QPoint, float)
-    mouse_press_event_sig   = pyqtSignal(QMouseEvent, QPoint, float)
-    mouse_release_event_sig = pyqtSignal(QMouseEvent, QPoint, float)
+    mouse_double_click_sig  = pyqtSignal(QMouseEvent, QPointF, float)
+    mouse_move_event_sig    = pyqtSignal(QMouseEvent, QPointF, float)
+    mouse_press_event_sig   = pyqtSignal(QMouseEvent, QPointF, float)
+    mouse_release_event_sig = pyqtSignal(QMouseEvent, QPointF, float)
     paint_event_sig         = pyqtSignal(QPaintEvent, QPainter, float)
 
     def __init__(self):
@@ -64,7 +64,7 @@ class CanvasPicture(QWidget):
             return
         self.mouse_double_click_sig.emit(
             event,
-            self.__transform_pos(event.pos()),
+            self.__transform_pos(QPointF(event.pos())),
             self.scale)
         self.update()
 
@@ -75,7 +75,7 @@ class CanvasPicture(QWidget):
             return
         self.mouse_move_event_sig.emit(
             event,
-            self.__transform_pos(event.pos()),
+            self.__transform_pos(QPointF(event.pos())),
             self.scale)
         self.update()
 
@@ -86,7 +86,7 @@ class CanvasPicture(QWidget):
             return
         self.mouse_press_event_sig.emit(
             event,
-            self.__transform_pos(event.pos()),
+            self.__transform_pos(QPointF(event.pos())),
             self.scale)
         self.update()
 
@@ -97,7 +97,7 @@ class CanvasPicture(QWidget):
             return
         self.mouse_release_event_sig.emit(
             event,
-            self.__transform_pos(event.pos()),
+            self.__transform_pos(QPointF(event.pos())),
             self.scale)
         self.update()
 
@@ -174,14 +174,14 @@ class CanvasPicture(QWidget):
         """Convert from widget-logical coordinates to painter-logical coordinates."""
         return point / self.scale - self.__offset_to_center()
 
-    def __offset_to_center(self) -> QPoint:
+    def __offset_to_center(self) -> QPointF:
         s = self.scale
         area = super(CanvasPicture, self).size()
         w, h = self.pixmap.width() * s, self.pixmap.height() * s
         aw, ah = area.width(), area.height()
         x = (aw - w) / (2 * s) if aw > w else 0
         y = (ah - h) / (2 * s) if ah > h else 0
-        return QPoint(int(x), int(y))
+        return QPointF(x, y)
 
 
 class CanvasScroll(QScrollArea):

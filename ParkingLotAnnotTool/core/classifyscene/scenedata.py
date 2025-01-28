@@ -5,6 +5,7 @@ from typing import Optional
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QMessageBox as QMB
+from ..general.dict_to_layout import dict_to_layout
 
 
 class SceneData(QObject):
@@ -267,30 +268,9 @@ class SceneDataInfoWidget(QWidget):
         self.scene_data.selected_lot_idx_changed.connect(self.update)
         self.scene_data.selected_scene_idx_changed.connect(self.update)
         self.scene_data.data_changed.connect(self.update)
-        layout, self.line_edits = self.dict_to_layout(self.scene_data.info())
+        layout, self.line_edits = dict_to_layout(self.scene_data.info())
         self.setLayout(layout)
         self.adjustSize()
-
-    def dict_to_layout(self, data):
-        layout = QVBoxLayout()
-        line_edits = {}
-        for key, value in data.items():
-            label = QLabel(str(key))
-            line_edit = QLineEdit()
-            if value is None:
-                line_edit.setText("None")
-            else:
-                line_edit.setText(str(value))
-            line_edit.setMinimumWidth(len(str(value)) * 10)
-            line_edit.setAlignment(Qt.AlignmentFlag.AlignRight)
-            line_edit.setEnabled(False)
-            line_edits[key] = line_edit
-            _layout = QHBoxLayout()
-            _layout.addWidget(label)
-            _layout.addWidget(line_edit)
-            layout.addLayout(_layout)
-        layout.addStretch()
-        return layout, line_edits
 
     def update(self):
         for key, value in self.scene_data.info().items():

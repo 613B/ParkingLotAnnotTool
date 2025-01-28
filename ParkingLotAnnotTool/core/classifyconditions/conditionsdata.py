@@ -3,6 +3,7 @@ from pathlib import Path
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QMessageBox as QMB
+from ..general.dict_to_layout import dict_to_layout
 
 
 class ConditionsData(QObject):
@@ -175,30 +176,9 @@ class ConditionsDataInfoWidget(QWidget):
     def __init__(self, conditions_data: ConditionsData, parent=None):
         super(ConditionsDataInfoWidget, self).__init__()
         self.conditions_data = conditions_data
-        layout, self.line_edits = self.dict_to_layout(self.conditions_data.info())
+        layout, self.line_edits = dict_to_layout(self.conditions_data.info())
         self.setMaximumWidth(150)
         self.setLayout(layout)
-
-    def dict_to_layout(self, data):
-        layout = QVBoxLayout()
-        line_edits = {}
-        for key, value in data.items():
-            label = QLabel(str(key))
-            line_edit = QLineEdit()
-            if value is None:
-                line_edit.setText("None")
-            else:
-                line_edit.setText(str(value))
-            line_edit.setMinimumWidth(len(str(value)) * 10)
-            line_edit.setAlignment(Qt.AlignmentFlag.AlignRight)
-            line_edit.setEnabled(False)
-            line_edits[key] = line_edit
-            _layout = QHBoxLayout()
-            _layout.addWidget(label)
-            _layout.addWidget(line_edit)
-            layout.addLayout(_layout)
-        layout.addStretch()
-        return layout, line_edits
 
     def update(self):
         for key, value in self.conditions_data.info().items():

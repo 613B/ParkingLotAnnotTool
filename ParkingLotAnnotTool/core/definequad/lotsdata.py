@@ -92,11 +92,20 @@ class LotsData(QObject):
         area = abs(area) / 2.0
         return area
 
+    def round_floats_recursive(self, obj, precision):
+        if isinstance(obj, float):
+            return round(obj, precision)
+        elif isinstance(obj, dict):
+            return {k: self.round_floats_recursive(v, precision) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self.round_floats_recursive(elem, precision) for elem in obj]
+        return obj
+
     def save(self):
         data = {
             "version": "0.1",
             "image_path": self._image_path,
-            "lots": self._lots}
+            "lots": self.round_floats_recursive(self._lots, 3)}
         with open(self._json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
         self._loaded = True
@@ -210,10 +219,10 @@ class LotsData(QObject):
     def add_lot(
             self,
             lot_id: str,
-            x1: int, y1: int,
-            x2: int, y2: int,
-            x3: int, y3: int,
-            x4: int, y4: int):
+            x1: float, y1: float,
+            x2: float, y2: float,
+            x3: float, y3: float,
+            x4: float, y4: float):
         self._lots.append({
             'id': lot_id,
             'quad': [x1, y1, x2, y2, x3, y3, x4, y4]})
@@ -223,7 +232,7 @@ class LotsData(QObject):
     def info(self):
         return {
             "id": self.selected_lot_id(),
-            "area": self.selected_lot_area(),
+            "area": round(self.selected_lot_area(), 3),
         }
 
 class LotsDataInfoWidget(QWidget):

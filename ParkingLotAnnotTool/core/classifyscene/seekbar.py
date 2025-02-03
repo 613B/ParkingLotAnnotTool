@@ -92,7 +92,7 @@ class SeekBarWidget(QWidget):
         slider_max = self.slider.maximum()
         pen_free = QPen(QColor("green"), 2)
         pen_busy = QPen(QColor("red"), 2)
-        pen_occluded = QPen(QColor("blue"), 2)
+        pen_flags = QPen(QColor("blue"), 2)
 
         line_length = slider_rect.bottom() - slider_rect.top()
         center = slider_rect.top() + int(line_length / 2)
@@ -109,7 +109,5 @@ class SeekBarWidget(QWidget):
             flags = scene["flags"]
             if not flags:
                 continue
-            for flag in flags:
-                if flag == "occluded":
-                    painter.setPen(pen_occluded)
-                painter.drawLine(marker, center, marker, center + line_length)
+            painter.setPen(pen_flags)
+            painter.drawLine(marker, center, marker, center + line_length)

@@ -34,6 +34,8 @@ class ClassifySceneWidget(QWidget):
         self.free_action = new_action(self, 'Free', icon_text='Free', slot=self.click_free, shortcut=QKeySequence("1"))
         self.busy_action = new_action(self, 'Busy', icon_text='Busy', slot=self.click_busy, shortcut=QKeySequence("2"))
         self.occluded_action = new_action(self, 'Occluded', icon_text='Occluded', slot=self.click_occluded, shortcut=QKeySequence("3"))
+        self.person_action = new_action(self, 'Person', icon_text='Person', slot=self.click_person, shortcut=QKeySequence("4"))
+        self.ambiguous_action = new_action(self, 'Ambiguous', icon_text='Ambiguous', slot=self.click_ambiguous, shortcut=QKeySequence("5"))
         self.view_zoom_fit_action = new_action(self, 'Zoom Fit', icon=read_icon('zoom_fit.png'), slot=self.press_view_zoom_fit)
         self.view_zoom_1_action = new_action(self, 'Zoom 100%', icon=read_icon('zoom_1.png'), slot=self.press_view_zoom_1)
         self.toolbar = QToolBar()
@@ -45,6 +47,8 @@ class ClassifySceneWidget(QWidget):
         self.toolbar.addAction(self.free_action)
         self.toolbar.addAction(self.busy_action)
         self.toolbar.addAction(self.occluded_action)
+        self.toolbar.addAction(self.person_action)
+        self.toolbar.addAction(self.ambiguous_action)
         self.toolbar.addSeparator()
         self.toolbar.addAction(self.view_zoom_fit_action)
         self.toolbar.addAction(self.view_zoom_1_action)
@@ -100,6 +104,16 @@ class ClassifySceneWidget(QWidget):
     def click_occluded_impl(self) -> None:
         self.scene_data.add_occluded_flag()
 
+    def click_person(self) -> None:
+        traceback_and_exit(self.click_person_impl)
+    def click_person_impl(self) -> None:
+        self.scene_data.add_person_flag()
+
+    def click_ambiguous(self) -> None:
+        traceback_and_exit(self.click_ambiguous_impl)
+    def click_ambiguous_impl(self) -> None:
+        self.scene_data.add_ambiguous_flag()
+
     def press_view_zoom_fit(self) -> None:
         traceback_and_exit(self.press_view_zoom_fit_impl)
     def press_view_zoom_fit_impl(self) -> None:
@@ -129,10 +143,16 @@ class ClassifySceneWidget(QWidget):
 
         if not prev_flags:
             self.occluded_action.setEnabled(True)
+            self.person_action.setEnabled(True)
+            self.ambiguous_action.setEnabled(True)
             return
         for prev_flag in prev_flags:
             if prev_flag == "occluded":
                 self.occluded_action.setEnabled(False)
+            if prev_flag == "person":
+                self.person_action.setEnabled(False)
+            if prev_flag == "ambiguous":
+                self.ambiguous_action.setEnabled(False)
 
 class SignalBlocker:
     def __init__(self, widget):

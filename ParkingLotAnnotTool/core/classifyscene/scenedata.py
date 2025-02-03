@@ -217,6 +217,18 @@ class SceneData(QObject):
         self.prev_scene()["flags"].append("occluded")
         self.data_changed.emit()
 
+    def add_person_flag(self):
+        if self.prev_scene() is None:
+            return
+        self.prev_scene()["flags"].append("person")
+        self.data_changed.emit()
+
+    def add_ambiguous_flag(self):
+        if self.prev_scene() is None:
+            return
+        self.prev_scene()["flags"].append("ambiguous")
+        self.data_changed.emit()
+
     def remove_selected_scene(self):
         scenes = self.scenes_with_current_lot_id()
         if not scenes:

@@ -40,8 +40,16 @@ class LotsData(QObject):
         self._dirty = False
         self._loaded = True
         self._selected_idx = None
+        self.lots_validation()
         self.data_changed.emit()
         return True
+
+    def lots_validation(self):
+        for lot in self.lots():
+            if 'label' not in lot.keys():
+                lot['label'] = 'free'
+            if 'crop' not in lot.keys():
+                lot['crop'] = False
 
     def loaded(self) -> bool:
         return self._loaded
@@ -136,6 +144,13 @@ class LotsData(QObject):
     def lots(self):
         return self._lots
 
+    def get_crop_lots(self):
+        lots = []
+        for lot in self.lots():
+            if lot['crop'] is True:
+                lots.append(lot)
+        return lots
+
     def get_lot_by_idx(self, lidx: int):
         lots = self.lots()
         if len(lots) <= lidx:
@@ -225,9 +240,17 @@ class LotsData(QObject):
             x4: float, y4: float):
         self._lots.append({
             'id': lot_id,
-            'quad': [x1, y1, x2, y2, x3, y3, x4, y4]})
+            'quad': [x1, y1, x2, y2, x3, y3, x4, y4],
+            'crop': False})
         self._dirty = True
         self.data_changed.emit()
+
+    def set_crop_flag_by_idx(self, lidx: int, crop_flag: bool):
+        lot = self.get_lot_by_idx(lidx)
+        if lot is None:
+            return
+        lot['crop'] = crop_flag
+        self._dirty = True
 
     def info(self):
         return {

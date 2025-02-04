@@ -181,7 +181,7 @@ class DefineQuadWidget(QWidget):
                 self, "Info",
                 "Image is not loaded. Or it has never been saved.")
             return
-        lots = self.lots_data.lots()
+        lots = self.lots_data.get_crop_lots()
         if lots == []:
             QMessageBox.information(
                 self, "Info",
@@ -203,15 +203,15 @@ class DefineQuadWidget(QWidget):
         if self.scene_json_path.exists():
             with open(self.scene_json_path, 'r', encoding='utf-8') as file:
                 scenes_data = json.load(file)
-            scenes_data["lots"] = self.lots_data.lots()
+            scenes_data["lots"] = self.lots_data.get_crop_lots()
         else:
             scenes_data = {
                 "version": "0.1",
                 "video_path": str(video_path),
-                "lots": self.lots_data.lots(),
+                "lots": self.lots_data.get_crop_lots(),
                 "scenes": {}
             }
-        for lot in self.lots_data.lots():
+        for lot in self.lots_data.get_crop_lots():
             if lot["id"] in scenes_data["scenes"]:
                 continue
             scenes_data["scenes"][lot["id"]] = []
@@ -476,6 +476,29 @@ class SignalBlocker:
         self.widget.blockSignals(False)
 
 
+class LotListWidgetItem(QWidget):
+    checkbox_state_changed = pyqtSignal(int, int)
+
+    def __init__(self, id, idx, checked=False):
+        super().__init__()
+        self.idx = idx
+        layout = QHBoxLayout()
+        self.checkbox = QCheckBox()
+        self.checkbox.setChecked(checked)
+        self.label = QLabel(id)
+        layout.addWidget(self.checkbox)
+        layout.addWidget(self.label)
+        layout.addStretch()
+        left, top, right, bottom = layout.getContentsMargins()
+        layout.setContentsMargins(left, int(top * 0.5), right, int(bottom * 0.5))
+        self.setLayout(layout)
+
+        self.checkbox.stateChanged.connect(
+            self.emit_checkbox_state_changed)
+
+    def emit_checkbox_state_changed(self, state):
+        self.checkbox_state_changed.emit(self.idx, state)
+
 class LotList(QListWidget):
 
     def __init__(self, lots_data: LotsData, parent=None):
@@ -490,8 +513,12 @@ class LotList(QListWidget):
     def update(self) -> None:
         with SignalBlocker(self):
             self.clear()
-            for _, lot in enumerate(self._lots_data.lots()):
-                self.addItem(f"{lot['id']}")
+            for lidx, lot in enumerate(self._lots_data.lots()):
+                row = LotListWidgetItem(f"{lot['id']}", lidx, lot['crop'])
+                row.checkbox_state_changed.connect(self.handle_checkbox_state_changed)
+                item = QListWidgetItem(self)
+                item.setSizeHint(row.minimumSizeHint())
+                self.setItemWidget(item, row)
             if self._lots_data.selected_idx() is None:
                 self.setCurrentRow(-1)
             else:
@@ -505,3 +532,11 @@ class LotList(QListWidget):
 
     def on_current_row_changed(self):
         self._lots_data.set_selected_idx(self.currentRow())
+
+    def handle_checkbox_state_changed(self, idx, state):
+        crop_flag = True
+        if   state == Qt.CheckState.Checked:
+            crop_flag = True
+        elif state == Qt.CheckState.Unchecked:
+            crop_flag = False
+        self._lots_data.set_crop_flag_by_idx(idx, crop_flag)

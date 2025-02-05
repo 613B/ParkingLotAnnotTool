@@ -93,6 +93,7 @@ class SeekBarWidget(QWidget):
         pen_free = QPen(QColor("green"), 2)
         pen_busy = QPen(QColor("red"), 2)
         pen_flags = QPen(QColor("blue"), 2)
+        pen_difficult = QPen(QColor("orange"), 2)
 
         line_length = slider_rect.bottom() - slider_rect.top()
         center = slider_rect.top() + int(line_length / 2)
@@ -110,4 +111,10 @@ class SeekBarWidget(QWidget):
             if not flags:
                 continue
             painter.setPen(pen_flags)
+            painter.drawLine(marker, center, marker, center + line_length)
+
+        for difficult_frames in self.scene_data.difficult_frames_with_current_lot_id():
+            marker = slider_rect.left() + slider_rect.width() * (int(difficult_frames["frame"]) - slider_min) / (slider_max - slider_min)
+            marker = int(marker)
+            painter.setPen(pen_difficult)
             painter.drawLine(marker, center, marker, center + line_length)

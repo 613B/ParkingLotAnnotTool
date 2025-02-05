@@ -24,6 +24,7 @@ class ClassifySceneWidget(QWidget):
         self.scene_data.data_changed.connect(self.refresh)
         self.scene_data.selected_lot_idx_changed.connect(self.refresh)
         self.scene_data.selected_scene_idx_changed.connect(self.refresh)
+        self.scene_data.selected_difficult_frame_idx_changed.connect(self.refresh)
 
         self.canvas_picture = CanvasPicture()
         self.canvas_scroll = CanvasScroll(self, self.canvas_picture)
@@ -55,6 +56,7 @@ class ClassifySceneWidget(QWidget):
 
         self.lot_list = LotList(self.scene_data)
         self.scene_list = SceneList(self.scene_data)
+        self.difficult_list = DifficultList(self.scene_data)
 
         layout = QGridLayout(self)
         layout.addWidget(self.toolbar, 0, 0, 2, 1)  # (widget, row, col, row_size, col_size)
@@ -62,7 +64,8 @@ class ClassifySceneWidget(QWidget):
         layout.addWidget(self.scene_data_info, 0, 2, 1, 1)
         layout.addWidget(self.seekbar, 1, 1, 1, 2)
         layout.addWidget(self.scene_list, 0, 3, 2, 1)
-        layout.addWidget(self.lot_list, 0, 4, 2, 1)
+        layout.addWidget(self.difficult_list, 0, 4, 2, 1)
+        layout.addWidget(self.lot_list, 0, 5, 2, 1)
         self.setLayout(layout)
 
     def changed_zoom(self):
@@ -107,12 +110,12 @@ class ClassifySceneWidget(QWidget):
     def click_person(self) -> None:
         traceback_and_exit(self.click_person_impl)
     def click_person_impl(self) -> None:
-        self.scene_data.add_person_flag()
+        self.scene_data.add_person_frame()
 
     def click_ambiguous(self) -> None:
         traceback_and_exit(self.click_ambiguous_impl)
     def click_ambiguous_impl(self) -> None:
-        self.scene_data.add_ambiguous_flag()
+        self.scene_data.add_ambiguous_frame()
 
     def press_view_zoom_fit(self) -> None:
         traceback_and_exit(self.press_view_zoom_fit_impl)
@@ -141,18 +144,20 @@ class ClassifySceneWidget(QWidget):
             self.busy_action.setEnabled(False)
             self.free_action.setEnabled(True)
 
-        if not prev_flags:
-            self.occluded_action.setEnabled(True)
-            self.person_action.setEnabled(True)
-            self.ambiguous_action.setEnabled(True)
-            return
+        self.occluded_action.setEnabled(True)
         for prev_flag in prev_flags:
             if prev_flag == "occluded":
                 self.occluded_action.setEnabled(False)
-            if prev_flag == "person":
-                self.person_action.setEnabled(False)
-            if prev_flag == "ambiguous":
-                self.ambiguous_action.setEnabled(False)
+
+        if self.scene_data.is_ambiguous():
+            self.ambiguous_action.setEnabled(False)
+        else:
+            self.ambiguous_action.setEnabled(True)
+
+        if self.scene_data.person_exists():
+            self.person_action.setEnabled(False)
+        else:
+            self.person_action.setEnabled(True)
 
 class SignalBlocker:
     def __init__(self, widget):
@@ -220,3 +225,36 @@ class SceneList(QListWidget):
 
     def on_current_row_changed(self):
         self._scene_data.set_selected_scene_idx(self.currentRow())
+
+
+class DifficultList(QListWidget):
+
+    def __init__(self, scene_data: SceneData, parent=None):
+        super(DifficultList, self).__init__(parent)
+        self._scene_data = scene_data
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+        self.setMaximumWidth(200)
+        self.currentRowChanged.connect(self.on_current_row_changed)
+        self._scene_data.selected_lot_idx_changed.connect(self.update)
+        self._scene_data.data_loaded.connect(self.update)
+        self._scene_data.data_changed.connect(self.update)
+
+    # Callback
+    def update(self) -> None:
+        with SignalBlocker(self):
+            self.clear()
+            for difficult_frame in self._scene_data.difficult_frames_with_current_lot_id():
+                self.addItem(f'{difficult_frame["frame"]} ({difficult_frame["label"]})')
+            if self._scene_data.selected_difficult_frame_idx() is None:
+                self.setCurrentRow(-1)
+            else:
+                self.setCurrentRow(self._scene_data.selected_difficult_frame_idx())
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() == Qt.Key.Key_Escape:
+            self._scene_data.set_selected_difficult_frame_idx(None)
+        elif event.key() == Qt.Key.Key_Delete:
+            self._scene_data.remove_difficult_frame()
+
+    def on_current_row_changed(self):
+        self._scene_data.set_selected_difficult_frame_idx(self.currentRow())

@@ -13,6 +13,7 @@ class SceneData(QObject):
     current_frame_changed = pyqtSignal()
     selected_lot_idx_changed = pyqtSignal()
     selected_scene_idx_changed = pyqtSignal()
+    selected_difficult_frame_idx_changed = pyqtSignal()
     data_loaded = pyqtSignal()
     data_changed = pyqtSignal()
 
@@ -28,6 +29,7 @@ class SceneData(QObject):
         self._current_frame = "00000"
         self._selected_lot_idx = None
         self._selected_scene_idx = None
+        self._selected_difficult_frame_idx = None
 
     def reset(self):
         pass
@@ -39,10 +41,12 @@ class SceneData(QObject):
         self._video_path = data['video_path']
         self._lots = data['lots']
         self._scenes = data['scenes']
+        self._difficult_frames = data['difficult_frames']
         self._dirty = False
         self._loaded = True
 
         self._selected_scene_idx = None
+        self._selected_difficult_frame_idx = None
         self.set_selected_lot_idx(0)
         self.update_current_frame("00000")
         self.data_loaded.emit()
@@ -88,10 +92,33 @@ class SceneData(QObject):
             return None
         return self._scenes[self.current_lot_id()]
 
+    def difficult_frames_with_current_lot_id(self):
+        if self.current_lot_id() is None:
+            return []
+        return self._difficult_frames[self.current_lot_id()]
+
+    def selected_difficult_frame_idx(self):
+        return self._selected_difficult_frame_idx
+
+    def selected_difficult_frame(self):
+        return self.difficult_frames_with_current_lot_id()[self._selected_difficult_frame_idx]
+
+    def set_selected_difficult_frame_idx(self, value):
+        self._selected_difficult_frame_idx = value
+        if value is not None:
+            difficult_frame = self.selected_difficult_frame()
+            self.update_current_frame(difficult_frame["frame"])
+        self.selected_difficult_frame_idx_changed.emit()
+
     def sort_scenes(self):
         scenes = self.scenes_with_current_lot_id()
         if scenes is not None:
             scenes.sort(key=lambda x: x["frame"])
+
+    def sort_difficult_frames(self):
+        difficult_frames = self.difficult_frames_with_current_lot_id()
+        if difficult_frames is not None:
+            difficult_frames.sort(key=lambda x: x["frame"])
 
     def current_scene(self):
         return self.prev_scene()
@@ -162,12 +189,28 @@ class SceneData(QObject):
                 size += 1
         return size
 
+    def is_ambiguous(self):
+        for difficult_frame in self.difficult_frames_with_current_lot_id():
+            if (difficult_frame["frame"] == self.current_frame()) and (
+                difficult_frame["label"] == "ambiguous"):
+                return True
+        return False
+
+    def person_exists(self):
+        for difficult_frame in self.difficult_frames_with_current_lot_id():
+            if (difficult_frame["frame"] == self.current_frame()) and (
+                difficult_frame["label"] == "person"):
+                return True
+        return False
+
     def info(self):
         return {
             "frame": self.current_frame(),
             "label": self.current_label(),
             "num scenes": self.num_scenes(),
-            "num occluded\nscenes": self.num_occluded_scenes()}
+            "num occluded\nscenes": self.num_occluded_scenes(),
+            "is ambiguous": self.is_ambiguous(),
+            "person exists": self.person_exists()}
 
     def parent_dir(self) -> Path:
         return self._json_path.parent
@@ -217,16 +260,16 @@ class SceneData(QObject):
         self.prev_scene()["flags"].append("occluded")
         self.data_changed.emit()
 
-    def add_person_flag(self):
-        if self.prev_scene() is None:
-            return
-        self.prev_scene()["flags"].append("person")
+    def add_person_frame(self):
+        self.difficult_frames_with_current_lot_id().append(
+            {"label": "person",
+             "frame": self._current_frame})
         self.data_changed.emit()
 
-    def add_ambiguous_flag(self):
-        if self.prev_scene() is None:
-            return
-        self.prev_scene()["flags"].append("ambiguous")
+    def add_ambiguous_frame(self):
+        self.difficult_frames_with_current_lot_id().append(
+            {"label": "ambiguous",
+             "frame": self._current_frame})
         self.data_changed.emit()
 
     def remove_selected_scene(self):
@@ -236,6 +279,15 @@ class SceneData(QObject):
         if self._selected_scene_idx is None:
             return
         scenes.pop(self._selected_scene_idx)
+        self.data_changed.emit()
+
+    def remove_difficult_frame(self):
+        difficult_frames = self.difficult_frames_with_current_lot_id()
+        if not difficult_frames:
+            return
+        if self._selected_difficult_frame_idx is None:
+            return
+        difficult_frames.pop(self._selected_difficult_frame_idx)
         self.data_changed.emit()
 
     def loaded(self) -> bool:
@@ -249,7 +301,8 @@ class SceneData(QObject):
             "version": "0.1",
             "video_path": str(self._video_path),
             "lots": self._lots,
-            "scenes": self._scenes}
+            "scenes": self._scenes,
+            "difficult_frames": self._difficult_frames}
         with open(self._json_path, 'w', encoding='utf-8') as file:
             json.dump(data, file, ensure_ascii=False, indent=4)
         self._loaded = True

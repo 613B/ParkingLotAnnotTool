@@ -209,12 +209,16 @@ class DefineQuadWidget(QWidget):
                 "version": "0.1",
                 "video_path": str(video_path),
                 "lots": self.lots_data.get_crop_lots(),
-                "scenes": {}
+                "scenes": {},
+                "difficult_frames": {}
             }
+
         for lot in self.lots_data.get_crop_lots():
-            if lot["id"] in scenes_data["scenes"]:
-                continue
-            scenes_data["scenes"][lot["id"]] = []
+            if lot["id"] not in scenes_data["scenes"]:
+                scenes_data["scenes"][lot["id"]] = []
+            if lot["id"] not in scenes_data["difficult_frames"]:
+                scenes_data["difficult_frames"][lot["id"]] = []
+
         with open(self.scene_json_path, 'w', encoding='utf-8') as file:
             json.dump(scenes_data, file, ensure_ascii=False, indent=4)
 

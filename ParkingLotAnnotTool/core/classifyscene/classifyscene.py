@@ -5,6 +5,7 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
 from ParkingLotAnnotTool.public.signals import global_signals
+from ParkingLotAnnotTool.public.hotkey import global_hotkey
 from ParkingLotAnnotTool.utils.resource import read_icon
 from ParkingLotAnnotTool.utils.trace import traceback_and_exit
 from ..general.action import new_action
@@ -159,6 +160,7 @@ class ClassifySceneWidget(QWidget):
         else:
             self.person_action.setEnabled(True)
 
+
 class SignalBlocker:
     def __init__(self, widget):
         self.widget = widget
@@ -198,6 +200,7 @@ class SceneList(QListWidget):
 
     def __init__(self, scene_data: SceneData, parent=None):
         super(SceneList, self).__init__(parent)
+        global_hotkey.hotkey_signal.connect(self.hotkey_handler)
         self._scene_data = scene_data
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         self.setMaximumWidth(200)
@@ -225,6 +228,15 @@ class SceneList(QListWidget):
 
     def on_current_row_changed(self):
         self._scene_data.set_selected_scene_idx(self.currentRow())
+
+    def hotkey_handler(self, qtkey):
+        current_idx = self._scene_data.selected_scene_idx()
+        if current_idx is None:
+            return
+        if   qtkey == Qt.Key.Key_J:
+            self.setCurrentRow(max(current_idx - 1, 0))
+        elif qtkey == Qt.Key.Key_K:
+            self.setCurrentRow(min(current_idx + 1, self.count() - 1))
 
 
 class DifficultList(QListWidget):

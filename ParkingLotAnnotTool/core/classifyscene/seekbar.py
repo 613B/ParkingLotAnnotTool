@@ -2,6 +2,7 @@ from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 
+from ParkingLotAnnotTool.public.hotkey import global_hotkey
 from .scenedata import SceneData
 
 class SeekBarWidget(QWidget):
@@ -9,6 +10,7 @@ class SeekBarWidget(QWidget):
     def __init__(self, scene_data: SceneData, parent=None):
         super().__init__(parent)
 
+        global_hotkey.hotkey_signal.connect(self.hotkey_handler)
         self.scene_data = scene_data
         self.scene_data.selected_lot_idx_changed.connect(self.repaint)
         self.scene_data.data_changed.connect(self.repaint)
@@ -40,6 +42,14 @@ class SeekBarWidget(QWidget):
         layout.addWidget(self.next_button)
 
         self.setLayout(layout)
+
+    def step_backward(self):
+        value = self.slider.value()
+        self.slider.setValue(max(value - 1, self.slider.minimum()))
+
+    def step_forward(self):
+        value = self.slider.value()
+        self.slider.setValue(min(value + 1, self.slider.maximum()))
 
     def start_next_timer(self):
         self.increment = 1
@@ -79,6 +89,12 @@ class SeekBarWidget(QWidget):
 
     def update_value(self):
         self.slider.setValue(int(self.scene_data.current_frame()))
+
+    def hotkey_handler(self, qtkey):
+        if   qtkey == Qt.Key.Key_H:
+            self.step_backward()
+        elif qtkey == Qt.Key.Key_L:
+            self.step_forward()
 
     def paintEvent(self, event):
         super().paintEvent(event)

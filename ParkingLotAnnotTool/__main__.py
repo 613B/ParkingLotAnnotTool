@@ -4,7 +4,9 @@ import sys
 from PyQt6.QtWidgets import QApplication
 
 import ParkingLotAnnotTool.public.signals as Signals
+import ParkingLotAnnotTool.public.hotkey as HotKey
 Signals.initialize()
+HotKey.initialize()
 
 from mainwindow import MainWindow
 

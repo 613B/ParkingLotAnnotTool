@@ -5,3 +5,4 @@ pillow
 loguru
 ruff
 tqdm
+keyboard

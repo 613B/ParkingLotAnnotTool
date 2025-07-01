@@ -58,21 +58,33 @@ def main():
         help="directory to save extracted JPEG frames"
     )
     parser.add_argument(
-        "--quality",
-        "-q",
+        "--quality", "-q",
         type=int,
         default=95,
         help="JPEG quality (0-100, higher is better)"
     )
+    parser.add_argument(
+        "--log-file", "-l",
+        type=Path,
+        default=Path("extract_frames.log"),
+        help="path to log file (will overwrite on each run)"
+    )
     args = parser.parse_args()
 
-    # configure logger to write to file
-    logger.add("extract_frames.log", level="INFO", rotation="10 MB")
+    # overwrite log file on each run
+    logger.add(
+        args.log_file,
+        level="INFO",
+        mode="w",
+        encoding="utf-8",
+        rotation="10 MB"
+    )
 
-    # log command and arguments
     logger.info("Command: {}", " ".join(sys.argv))
-    logger.info("Arguments: input_dir={}, output_dir={}, quality={}",
-                args.input_dir, args.output_dir, args.quality)
+    logger.info(
+        "Arguments: input_dir={}, output_dir={}, quality={}, log_file={} ",
+        args.input_dir, args.output_dir, args.quality, args.log_file
+    )
 
     extract_frames(args.input_dir, args.output_dir, args.quality)
 

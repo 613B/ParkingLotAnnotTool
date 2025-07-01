@@ -21,7 +21,7 @@ def extract_frames(
     mp4_files = [p for p in src_dir.iterdir() if p.is_file() and p.suffix.lower() == '.mp4']
     mp4_files = natsorted(mp4_files)
 
-    frame_counter = 1
+    frame_counter = 0
     for video_path in mp4_files:
         start_counter = frame_counter
         logger.info("Processing video '{}' (jpg start {})", video_path.name, start_counter)
@@ -35,17 +35,13 @@ def extract_frames(
             ret, frame = cap.read()
             if not ret:
                 break
-            out_path = dst_dir / f"{frame_counter:08d}.jpg"
+            out_path = dst_dir / f"{frame_counter:05d}.jpg"
             cv2.imwrite(str(out_path), frame, jpeg_params)
             frame_counter += 1
 
         cap.release()
         end_counter = frame_counter - 1
-        logger.info(
-            "Finished '{}' (jpg end {})",
-            video_path.name,
-            end_counter
-        )
+        logger.info("Finished '{}' (jpg end {})", video_path.name, end_counter)
 
 def main():
     parser = argparse.ArgumentParser(

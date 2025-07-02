@@ -539,8 +539,8 @@ class LotList(QListWidget):
 
     def handle_checkbox_state_changed(self, idx, state):
         crop_flag = True
-        if   state == Qt.CheckState.Checked:
+        if   state == Qt.CheckState.Checked.value:
             crop_flag = True
-        elif state == Qt.CheckState.Unchecked:
+        elif state == Qt.CheckState.Unchecked.value:
             crop_flag = False
         self._lots_data.set_crop_flag_by_idx(idx, crop_flag)

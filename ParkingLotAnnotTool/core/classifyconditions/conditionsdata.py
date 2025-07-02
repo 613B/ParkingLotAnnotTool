@@ -1,3 +1,4 @@
+import cv2
 import json
 from pathlib import Path
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
@@ -47,6 +48,10 @@ class ConditionsData(QObject):
 
     def current_frame(self):
         return self._current_frame
+    
+    def current_img(self):
+        image = cv2.imread((self.raw_data_dir() / (self.current_frame() + ".jpg")))
+        return cv2.resize(image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_NEAREST)
 
     def update_current_frame(self, value):
         self._current_frame = value

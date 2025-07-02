@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 import json
 from pathlib import Path
 from typing import Optional
@@ -6,6 +7,7 @@ from PyQt6.QtCore import QObject, pyqtSignal, Qt
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QMessageBox as QMB
 from ..general.dict_to_layout import dict_to_layout
+from PIL import Image, ImageDraw
 
 
 class SceneData(QObject):
@@ -71,8 +73,40 @@ class SceneData(QObject):
             return None
         return self.lot_ids()[self._selected_lot_idx]
 
+    def current_lot(self):
+        if self._selected_lot_idx is None:
+            return None
+        return self.lots()[self._selected_lot_idx]
+
     def current_lot_img(self):
-        return cv2.imread(self.parent_dir() / self.current_lot_id() / (self._current_frame + ".jpg"))
+        up_sample_rate = 2.0
+        if self.current_lot() is None:
+            return None
+        q = self.current_lot()['quad']
+        image = Image.open(self.raw_data_dir() / (self._current_frame + ".jpg"))
+        contours = [(q[0], q[1]), (q[2], q[3]), (q[4], q[5]), (q[6], q[7])]
+        orig_xmin = min(contours, key=lambda item: item[0])[0]
+        orig_xmax = max(contours, key=lambda item: item[0])[0]
+        orig_ymin = min(contours, key=lambda item: item[1])[1]
+        orig_ymax = max(contours, key=lambda item: item[1])[1]
+        w = orig_xmax - orig_xmin
+        h = orig_ymax - orig_ymin
+        long_side = max(w, h)
+        crop_w = (long_side * up_sample_rate)
+        crop_h = crop_w
+        xmin = int(orig_xmin) - (crop_w - w) // 2
+        ymin = int(orig_ymin) - (crop_h - h) // 2
+        xmax = xmin + crop_w
+        ymax = ymin + crop_h
+        cropped_img = image.crop((xmin, ymin, xmax, ymax))
+        offseted_contours = [(p[0] - xmin, p[1] - ymin) for p in contours]
+        scale = 256 / cropped_img.size[0]
+        resized_contours = [(p[0] * scale, p[1] * scale) for p in offseted_contours]
+        dst = cropped_img.resize((256, 256))
+        draw = ImageDraw.Draw(dst)
+        draw.polygon(resized_contours, outline="red", width=5)
+        image_np = np.array(dst)
+        return cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
 
     def selected_scene(self):
         return self.scenes_with_current_lot_id()[self._selected_scene_idx]

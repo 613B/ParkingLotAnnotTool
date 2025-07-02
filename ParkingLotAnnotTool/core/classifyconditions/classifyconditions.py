@@ -79,8 +79,7 @@ class ClassifyConditionsWidget(QWidget):
         self.conditions_data.load()
         global_signals.print(f"[{self.__class__.__name__}] open: {file_path[0]}")
         self.seekbar.set_maxvalue(self.conditions_data.len_frames()-1)
-        img = cv2.imread(self.conditions_data.raw_data_dir() / self.conditions_data.frame_names()[0], cv2.IMREAD_COLOR)
-        self.canvas_picture.set_picture(img)
+        self.canvas_picture.set_picture(self.conditions_data.current_img())
         self.canvas_scroll.fit_window()
 
     def click_save(self) -> None:
@@ -154,8 +153,7 @@ class ClassifyConditionsWidget(QWidget):
         self.setting_dialog.popup()
 
     def on_seekbar_value_changed(self, value):
-        img = cv2.imread(self.conditions_data.raw_data_dir() / self.conditions_data.frame_names()[value], cv2.IMREAD_COLOR)
-        self.canvas_picture.set_picture(img)
+        self.canvas_picture.set_picture(self.conditions_data.current_img())
         self.conditions_data.update_current_frame(self.seekbar.get_value_str())
 
     def on_conditionslist_itemselection_changed(self):
@@ -165,8 +163,7 @@ class ClassifyConditionsWidget(QWidget):
         parts = selected_items[0].text().split(", ")
         label = parts[0]
         frame = parts[1]
-        img = cv2.imread(self.conditions_data.parent_dir() / (frame + ".jpg"), cv2.IMREAD_COLOR)
-        self.canvas_picture.set_picture(img)
+        self.canvas_picture.set_picture(self.conditions_data.current_img())
         self.seekbar.set_value(int(frame))
         if   label == "sunny":
             self.sunny_action.setEnabled(False)

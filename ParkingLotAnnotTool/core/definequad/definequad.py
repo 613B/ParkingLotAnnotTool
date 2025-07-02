@@ -24,6 +24,7 @@ point_size = 8
 lot_default_fill_color       = QColor(  0, 128, 255, 155)
 lot_highlighted_fill_color   = QColor(  0,   0, 255, 200)
 lot_selected_fill_color      = QColor(  0,   0, 255, 128)
+lot_cropped_fill_color       = QColor(255,   0,   0, 128)
 point_default_fill_color     = QColor(255,   0,   0, 128)
 point_highlighted_fill_color = QColor(255, 153,   0, 255)
 
@@ -415,7 +416,10 @@ class Canvas:
 
         p.setPen(QPen(QColor(0, 0, 0, 0)))
         for lidx, lot in enumerate(lots):
-            lot_fill_color = lot_default_fill_color
+            if lot['crop']:
+                lot_fill_color = lot_cropped_fill_color
+            else:
+                lot_fill_color = lot_default_fill_color
             if   lidx == self.lots_data.selected_idx():
                 lot_fill_color = lot_selected_fill_color
             elif lidx == self.highlighted_lidx:

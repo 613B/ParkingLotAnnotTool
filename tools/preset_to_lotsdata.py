@@ -50,7 +50,7 @@ def main() -> None:
         for i, lot in enumerate(lots):
             q = lot["quad"]
             lots_data.add_lot(
-                lot_id=f"_{i}",
+                lot_id=lot["id"],
                 x1=q[0], y1=q[1],
                 x2=q[2], y2=q[3],
                 x3=q[4], y3=q[5],

@@ -28,15 +28,28 @@ def main() -> None:
 
     logger.info("args: {}", args)
 
-    scene_json = load_json(args.scene_json)
+    scene_data = load_json(args.scene_json)
 
-    for id, scenes in scene_json["scenes"].items():
+    for id, scenes in scene_data["scenes"].items():
         for scene in scenes:
             s = scene["frame"]
+            if not int(s):
+                continue
             n = int(s) + args.offset
             s_new = str(n).zfill(len(s))
             scene["frame"] = s_new
+    
+    for id, frames in scene_data["difficult_frames"].items():
+        for frame in frames:
+            s = frame["frame"]
+            if not int(s):
+                continue
+            n = int(s) + args.offset
+            s_new = str(n).zfill(len(s))
+            frame["frame"] = s_new
 
+    with args.scene_json.open('w', encoding='utf-8') as f:
+        json.dump(scene_data, f, ensure_ascii=False, indent=4)
 
 if __name__ == "__main__":
     main()

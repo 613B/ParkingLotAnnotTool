@@ -153,8 +153,8 @@ class ClassifyConditionsWidget(QWidget):
         self.setting_dialog.popup()
 
     def on_seekbar_value_changed(self, value):
-        self.canvas_picture.set_picture(self.conditions_data.current_img())
         self.conditions_data.update_current_frame(self.seekbar.get_value_str())
+        self.canvas_picture.set_picture(self.conditions_data.current_img())
 
     def on_conditionslist_itemselection_changed(self):
         selected_items = self.conditions_list.selectedItems()

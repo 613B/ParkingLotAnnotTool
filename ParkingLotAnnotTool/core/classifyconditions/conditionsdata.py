@@ -1,6 +1,7 @@
 import cv2
 import json
 from pathlib import Path
+from typing import List, Dict
 from PyQt6.QtCore import QObject, pyqtSignal, Qt
 from PyQt6.QtWidgets import *
 from PyQt6.QtWidgets import QMessageBox as QMB
@@ -15,7 +16,7 @@ class ConditionsData(QObject):
         super().__init__()
         self._json_path = None
         self._video_path: str = None
-        self._conditions = []
+        self._conditions: List[Dict] = []
         self._initial_time = None
         self._day_start_time = None
         self._night_start_time = None
@@ -34,7 +35,16 @@ class ConditionsData(QObject):
         with open(self._json_path, 'r', encoding='utf-8') as file:
             data = json.load(file)
         self._video_path = data['video_path']
-        self._conditions = data['conditions']
+        raw_conditions = data['conditions']
+        self._conditions = []
+        for d in raw_conditions:
+            if 'labels' in d:
+                self._conditions.append(d)
+            else:                               # support ver 0.1
+                self._conditions.append({
+                    'frame': d['frame'],
+                    'labels': {'weather': d['label']}
+                })
         self._initial_time = data['initial_time']
         self._day_start_time = data['day_start_time']
         self._night_start_time = data['night_start_time']
@@ -57,13 +67,13 @@ class ConditionsData(QObject):
         self._current_frame = value
         self.current_frame_changed.emit()
 
-    def get_label_find_by_frame(self, frame):
+    def get_label_find_by_frame(self, frame:str, axis: str):
         if frame is None or not self._conditions:
             return None
         for d in self._conditions:
             if d["frame"] == frame:
-                return d["label"]
-        return self.prev_label()
+                return d["labels"].get(axis)
+        return self.prev_label(axis)
 
     def get_frames_adjacent_label(self, frame):
         if not self._conditions:
@@ -88,19 +98,21 @@ class ConditionsData(QObject):
         prev, next = self.get_frames_adjacent_label(self._current_frame)
         return prev
 
-    def current_label(self):
-        return self.get_label_find_by_frame(self._current_frame)
+    def current_label(self, axis):
+        return self.get_label_find_by_frame(self._current_frame, axis)
 
-    def next_label(self):
-        return self.get_label_find_by_frame(self.next_label_frame())
+    def next_label(self, axis):
+        return self.get_label_find_by_frame(self.next_label_frame(), axis)
 
-    def prev_label(self):
-        return self.get_label_find_by_frame(self.prev_label_frame())
+    def prev_label(self, axis):
+        return self.get_label_find_by_frame(self.prev_label_frame(), axis)
 
     def info(self):
         return {
             "frame": self.current_frame(),
-            "label": self.current_label()}
+            "labels": {
+                "weather": self.current_label("weather"),
+                "time":    self.current_label("time")}}
 
     def parent_dir(self) -> Path:
         return self._json_path.parent
@@ -114,10 +126,20 @@ class ConditionsData(QObject):
     def frame_names(self):
         return [f'{i:05d}.jpg' for i in range(self.len_frames())]
 
-    def add_label(self, label):
-        self._conditions.append({
-            "frame": self.current_frame(),
-            "label": label})
+    def add_label(self, axis: str, value: str):
+        for d in self._conditions:
+            if d['frame'] == self._current_frame:
+                if axis in d['labels']:
+                    return False
+                d['labels'][axis] = value
+                break
+        else:
+            self._conditions.append({
+                'frame': self._current_frame,
+                'labels': {axis: value}
+            })
+        self._dirty = True
+        return True # is changed
 
     def loaded(self) -> bool:
         return self._loaded
@@ -127,7 +149,7 @@ class ConditionsData(QObject):
 
     def save(self):
         data = {
-            "version": "0.1",
+            "version": "0.2",
             "video_path": str(self._video_path),
             "conditions": self._conditions,
             "initial_time": self._initial_time,

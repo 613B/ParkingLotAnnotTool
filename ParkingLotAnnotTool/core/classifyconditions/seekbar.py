@@ -15,7 +15,7 @@ class SeekBarWidget(QWidget):
         self.slider.setValue(0)
         self.slider.valueChanged.connect(self.emit_value_changed)
 
-        self.conditions = {'sunny': set([]), 'rainy': set([])}
+        self.conditions = {'sunny': set([]), 'rainy': set([]), 'day': set([]), 'night': set([])}
 
         self.prev_button = QPushButton("◀")
         self.next_button = QPushButton("▶")
@@ -61,7 +61,7 @@ class SeekBarWidget(QWidget):
         self.slider.setValue(max(value + self.increment, self.slider.minimum()))
 
     def reset_conditions(self):
-        self.conditions = {'sunny': set([]), 'rainy': set([])}
+        self.conditions = {'sunny': set([]), 'rainy': set([]), 'day': set([]), 'night': set([])}
         self.repaint()
 
     def emit_value_changed(self, value):
@@ -85,11 +85,23 @@ class SeekBarWidget(QWidget):
     def add_rainy_condition(self):
         self.conditions['rainy'].add(self.slider.value())
 
+    def add_day_condition(self):
+        self.conditions['day'].add(self.slider.value())
+
+    def add_night_condition(self):
+        self.conditions['night'].add(self.slider.value())
+
     def remove_sunny_condition(self, value):
         self.conditions['sunny'].remove(value)
 
     def remove_rainy_condition(self, value):
         self.conditions['rainy'].remove(value)
+
+    def remove_day_condition(self, value):
+        self.conditions['day'].remove(value)
+
+    def remove_night_condition(self, value):
+        self.conditions['night'].remove(value)
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -98,15 +110,29 @@ class SeekBarWidget(QWidget):
         slider_rect = self.slider.geometry()
         slider_min = self.slider.minimum()
         slider_max = self.slider.maximum()
-        pen_rainy = QPen(QColor("blue"), 2)
+        pen_rainy = QPen(QColor("cyan"), 2)
         pen_sunny = QPen(QColor("red"), 2)
+        pen_day = QPen(QColor("orange"), 2)
+        pen_night = QPen(QColor("blue"), 2)
+
+        line_length = slider_rect.bottom() - slider_rect.top()
+        center = slider_rect.top() + int(line_length / 2)
+        y1, y2 = 0, 0
 
         for key, conditions_set in self.conditions.items():
             if key == 'rainy':
                 painter.setPen(pen_rainy)
+                y1, y2 = center - line_length, center
             if key == 'sunny':
                 painter.setPen(pen_sunny)
+                y1, y2 = center - line_length, center
+            if key == 'day':
+                painter.setPen(pen_day)
+                y1, y2 = center, center + line_length
+            if key == 'night':
+                painter.setPen(pen_night)
+                y1, y2 = center, center + line_length
             for condition in conditions_set:
                 marker = slider_rect.left() + slider_rect.width() * (condition - slider_min) / (slider_max - slider_min)
                 marker = int(marker)
-                painter.drawLine(marker, slider_rect.top(), marker, slider_rect.bottom())
+                painter.drawLine(marker, y1, marker, y2)

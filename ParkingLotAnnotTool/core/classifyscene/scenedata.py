@@ -332,7 +332,7 @@ class SceneData(QObject):
 
     def save(self):
         data = {
-            "version": "0.1",
+            "version": "0.3",
             "video_path": str(self._video_path),
             "lots": self._lots,
             "scenes": self._scenes,

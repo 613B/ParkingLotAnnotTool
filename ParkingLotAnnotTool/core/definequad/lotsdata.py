@@ -111,7 +111,7 @@ class LotsData(QObject):
 
     def save(self):
         data = {
-            "version": "0.1",
+            "version": "0.3",
             "image_path": self._image_path,
             "lots": self.round_floats_recursive(self._lots, 3)}
         with open(self._json_path, 'w', encoding='utf-8') as file:

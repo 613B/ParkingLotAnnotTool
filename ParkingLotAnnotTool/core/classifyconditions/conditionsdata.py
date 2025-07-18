@@ -149,7 +149,7 @@ class ConditionsData(QObject):
 
     def save(self):
         data = {
-            "version": "0.2",
+            "version": "0.3",
             "video_path": str(self._video_path),
             "conditions": self._conditions,
             "initial_time": self._initial_time,

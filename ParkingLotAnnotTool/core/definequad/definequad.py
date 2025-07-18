@@ -207,7 +207,7 @@ class DefineQuadWidget(QWidget):
             scenes_data["lots"] = self.lots_data.get_crop_lots()
         else:
             scenes_data = {
-                "version": "0.1",
+                "version": "0.3",
                 "video_path": str(video_path),
                 "lots": self.lots_data.get_crop_lots(),
                 "scenes": {},
@@ -225,7 +225,7 @@ class DefineQuadWidget(QWidget):
 
         conditions_json_path = outdir_path / "conditions.json"
         conditions_data = {
-            "version": "0.1",
+            "version": "0.3",
             "video_path": str(video_path),
             "conditions": [],
             "initial_time": None,
